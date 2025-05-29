@@ -416,50 +416,50 @@
         </div>
     </main>
 
-    <!-- Auth Modal -->
-    <div id="authModal" class="modal">
+    <!-- Auth Modals -->
+    <div id="loginModal" class="modal">
         <div class="modal-content">
-            <button class="modal-close" onclick="App.closeAuthModal()">&times;</button>
-            <div id="loginForm">
-                <h2 class="modal-title">Conectare</h2>
-                <form onsubmit="App.login(event)">
-                    <div class="form-group">
-                        <label class="form-label">Email</label>
-                        <input type="email" class="form-input" name="email" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Parolă</label>
-                        <input type="password" class="form-input" name="password" required>
-                    </div>
-                    <button type="submit" class="form-btn">Conectare</button>
-                </form>
-                <div class="form-switch">
-                    <span>Nu ai cont? </span>
-                    <a onclick="App.switchToRegister()">Înregistrează-te</a>
+            <span class="close" onclick="App.closeAuthModal()">&times;</span>
+            <h2>Conectare</h2>
+            <form id="loginForm" onsubmit="App.login(event)">
+                <div class="form-group">
+                    <label for="loginUsername">Username</label>
+                    <input type="text" id="loginUsername" name="username" required>
                 </div>
-            </div>
-            <div id="registerForm" style="display: none;">
-                <h2 class="modal-title">Înregistrare</h2>
-                <form onsubmit="App.register(event)">
-                    <div class="form-group">
-                        <label class="form-label">Nume</label>
-                        <input type="text" class="form-input" name="name" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Email</label>
-                        <input type="email" class="form-input" name="email" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Parolă</label>
-                        <input type="password" class="form-input" name="password" required>
-                    </div>
-                    <button type="submit" class="form-btn">Înregistrare</button>
-                </form>
-                <div class="form-switch">
-                    <span>Ai deja cont? </span>
-                    <a onclick="App.switchToLogin()">Conectează-te</a>
+                <div class="form-group">
+                    <label for="loginPassword">Parolă</label>
+                    <input type="password" id="loginPassword" name="password" required>
                 </div>
-            </div>
+                <button type="submit" class="btn-primary">Conectare</button>
+            </form>
+            <p class="auth-switch">
+                Nu ai cont? <a href="#" onclick="App.switchToRegister()">Înregistrează-te</a>
+            </p>
+        </div>
+    </div>
+
+    <div id="registerModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="App.closeAuthModal()">&times;</span>
+            <h2>Înregistrare</h2>
+            <form id="registerForm" onsubmit="App.register(event)">
+                <div class="form-group">
+                    <label for="registerUsername">Username</label>
+                    <input type="text" id="registerUsername" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerEmail">Email</label>
+                    <input type="email" id="registerEmail" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerPassword">Parolă</label>
+                    <input type="password" id="registerPassword" name="password" required>
+                </div>
+                <button type="submit" class="btn-primary">Înregistrare</button>
+            </form>
+            <p class="auth-switch">
+                Ai deja cont? <a href="#" onclick="App.switchToLogin()">Conectează-te</a>
+            </p>
         </div>
     </div>
 

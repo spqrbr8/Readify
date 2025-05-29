@@ -388,55 +388,130 @@ const App = {
 
   // Auth methods
   showLogin() {
-      document.getElementById('loginForm').style.display = 'block';
-      document.getElementById('registerForm').style.display = 'none';
-      document.getElementById('authModal').classList.add('show');
+      document.getElementById('loginModal').style.display = 'block';
+      document.getElementById('registerModal').style.display = 'none';
   },
 
   showRegister() {
-      document.getElementById('loginForm').style.display = 'none';
-      document.getElementById('registerForm').style.display = 'block';
-      document.getElementById('authModal').classList.add('show');
+      document.getElementById('registerModal').style.display = 'block';
+      document.getElementById('loginModal').style.display = 'none';
   },
 
   switchToLogin() {
-      document.getElementById('loginForm').style.display = 'block';
-      document.getElementById('registerForm').style.display = 'none';
+      this.showLogin();
   },
 
   switchToRegister() {
-      document.getElementById('loginForm').style.display = 'none';
-      document.getElementById('registerForm').style.display = 'block';
+      this.showRegister();
   },
 
   closeAuthModal() {
-      document.getElementById('authModal').classList.remove('show');
+      document.getElementById('loginModal').style.display = 'none';
+      document.getElementById('registerModal').style.display = 'none';
   },
 
-  login(event) {
+  async login(event) {
       event.preventDefault();
-      const formData = new FormData(event.target);
-      // Simulate login
-      this.currentUser = { name: 'User', email: formData.get('email') };
-      this.renderUserActions();
-      this.closeAuthModal();
+      const form = event.target;
+      const formData = new FormData(form);
+      formData.append('action', 'login');
+
+      try {
+          // Eliminăm mesajele de eroare anterioare
+          const oldError = document.getElementById('loginError');
+          if (oldError) {
+              oldError.remove();
+          }
+
+          const response = await fetch('auth.php', {
+              method: 'POST',
+              body: formData
+          });
+
+          if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const data = await response.json();
+          
+          if (data.success) {
+              this.currentUser = {
+                  id: data.user.id,
+                  name: data.user.username,
+                  email: data.user.email || ''
+              };
+              this.renderUserActions();
+              this.closeAuthModal();
+              form.reset();
+              
+              // Reîncărcăm datele utilizatorului
+              this.loadUserData();
+          } else {
+              const errorElement = document.createElement('div');
+              errorElement.id = 'loginError';
+              errorElement.className = 'error-message';
+              errorElement.textContent = data.message || 'A apărut o eroare la conectare. Vă rugăm să încercați din nou.';
+              form.insertBefore(errorElement, form.firstChild);
+          }
+      } catch (error) {
+          console.error('Eroare la autentificare:', error);
+          const errorElement = document.createElement('div');
+          errorElement.id = 'loginError';
+          errorElement.className = 'error-message';
+          errorElement.textContent = 'A apărut o eroare de conexiune. Vă rugăm să verificați conexiunea la internet și să încercați din nou.';
+          form.insertBefore(errorElement, form.firstChild);
+      }
   },
 
-  register(event) {
+  async register(event) {
       event.preventDefault();
-      const formData = new FormData(event.target);
-      // Simulate registration
-      this.currentUser = { name: formData.get('name'), email: formData.get('email') };
-      this.renderUserActions();
-      this.closeAuthModal();
+      const form = event.target;
+      const formData = new FormData(form);
+      formData.append('action', 'register');
+
+      try {
+          const response = await fetch('auth.php', {
+              method: 'POST',
+              body: formData
+          });
+          
+          const data = await response.json();
+          
+          if (data.success) {
+              alert(data.message);
+              this.switchToLogin();
+          } else {
+              alert(data.message);
+          }
+      } catch (error) {
+          console.error('Error:', error);
+          alert('A apărut o eroare la înregistrare');
+      }
   },
 
-  logout() {
-      this.currentUser = null;
-      this.renderUserActions();
-      const dropdown = document.getElementById('userDropdown');
-      if (dropdown) {
-      dropdown.classList.remove('show');
+  async logout() {
+      try {
+          const formData = new FormData();
+          formData.append('action', 'logout');
+          
+          const response = await fetch('auth.php', {
+              method: 'POST',
+              body: formData
+          });
+          
+          const data = await response.json();
+          
+          if (data.success) {
+              this.currentUser = null;
+              this.renderUserActions();
+              // Clear user-specific data
+              this.bookmarks = new Set();
+              this.history = [];
+              this.renderBooks();
+          }
+      } catch (error) {
+          console.error('Error:', error);
+          alert('A apărut o eroare la deconectare');
       }
   },
 
@@ -1132,61 +1207,8 @@ const App = {
                       <span>${percent}%</span>
                   </div>
               </div>
-          `;
-      }).join('') || '<div>Nu ai progres de lectură activ.</div>';
-      document.getElementById('profileProgressBars').innerHTML = progressBars;
-
-      // Obiective de lectură (exemplu: 5 cărți pe lună)
-      const month = new Date().getMonth();
-      const booksThisMonth = this.history.filter(h => (new Date(h.timestamp)).getMonth() === month)
-          .map(h => h.bookId);
-      const uniqueBooksThisMonth = [...new Set(booksThisMonth)].length;
-      const goal = 5;
-      document.getElementById('profileGoals').innerHTML = `
-          <div style="margin-bottom: 10px;">Obiectiv: <b>${goal}</b> cărți citite luna aceasta</div>
-          <div class="progress-bar" style="margin-bottom: 0;">
-              <div class="progress-fill" style="width: ${Math.min(100, uniqueBooksThisMonth/goal*100)}%;"></div>
-          </div>
-          <div class="progress-info">
-              <span>${uniqueBooksThisMonth} / ${goal} cărți</span>
-              <span>${uniqueBooksThisMonth >= goal ? '✔️' : ''}</span>
-          </div>
-      `;
-
-      // Cele mai citite genuri
-      const genreCount = {};
-      this.books.forEach(b => {
-          if (b.userProgress?.currentChapter > 0) {
-              (b.genres || []).forEach(g => {
-                  genreCount[g] = (genreCount[g] || 0) + 1;
-              });
-          }
+          `
       });
-      const topGenres = Object.entries(genreCount)
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, 3)
-          .map(([g, c]) => `<span class="tag active">${g} (${c})</span>`)
-          .join('') || '<span class="setting-description">Nu există date suficiente.</span>';
-      document.getElementById('profileTopGenres').innerHTML = topGenres;
-
-      // Ultima carte citită
-      if (this.history.length > 0) {
-          const last = this.history[0];
-          const book = this.books.find(b => b.id === last.bookId);
-          document.getElementById('profileLastRead').innerHTML = book
-              ? `<div style="display: flex; align-items: center; gap: 15px;">
-                      <div style="width: 40px; height: 60px; background: #eee; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 24px;">
-                          ${book.cover ? `<img src="${book.cover}" style="width:100%;height:100%;object-fit:cover;border-radius:4px;">` : '📖'}
-                      </div>
-                      <div>
-                          <div style="font-weight: 500;">${book.title}</div>
-                          <div class="setting-description">de ${book.author}</div>
-                      </div>
-                 </div>`
-              : '<span class="setting-description">Nicio carte citită recent.</span>';
-      } else {
-          document.getElementById('profileLastRead').innerHTML = '<span class="setting-description">Nicio carte citită recent.</span>';
-      }
   },
 
   updateReaderProgress(progress) {
@@ -1199,6 +1221,7 @@ const App = {
       console.log('Loading chapter text:', chapter);
   },
 };
+
 // Initialize the app after DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     App.init();
