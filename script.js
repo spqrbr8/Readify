@@ -15,154 +15,37 @@ const App = {
   },
   
   // Sample data - in future this will come from backend
-  books: [
-      {
-          id: 1,
-          title: "Dune",
-          author: "Frank Herbert",
-          genre: "Sci-Fi",
-          genres: ["Sci-Fi", "Adventure", "Epic"],
-          status: "completed",
-          rating: 4.8,
-          chapters: 48,
-          cover: "",
-          description: "Dune este o operă epică de science fiction care explorează teme complexe precum politica, religia, și ecologia într-un univers fascinant.",
-          publishDate: "1965-08-01",
-          publisher: "Chilton Books",
-          reviews: [
-              {
-                  id: 1,
-                  user: "Maria",
-                  rating: 5,
-                  text: "O capodoperă absolută! Worldbuilding-ul este fenomenal.",
-                  date: "2024-01-15",
-                  helpful: 12
-              }
-          ],
-          userProgress: {
-              currentChapter: 0,
-              totalChapters: 48,
-              readingTime: 1200 // minute
-          },
-          updated: new Date(Date.now() - 3600000).toISOString()
-      },
-      {
-          id: 2,
-          title: "1984",
-          author: "George Orwell",
-          genre: "Dystopian",
-          genres: ["Dystopian", "Classic", "Political"],
-          status: "completed",
-          rating: 4.9,
-          chapters: 24,
-          cover: "",
-          description: "Un roman distopic clasic.",
-          publishDate: "1949-06-08",
-          publisher: "Secker & Warburg",
-          reviews: [],
-          userProgress: {
-              currentChapter: 0,
-              totalChapters: 24,
-              readingTime: 600
-          },
-          updated: new Date(Date.now() - 7200000).toISOString()
-      },
-      {
-          id: 3,
-          title: "The Hobbit",
-          author: "J.R.R. Tolkien",
-          genre: "Fantasy",
-          genres: ["Fantasy", "Adventure"],
-          status: "completed",
-          rating: 4.7,
-          chapters: 19,
-          cover: "",
-          description: "O aventură magică în Middle-earth.",
-          publishDate: "1937-09-21",
-          publisher: "George Allen & Unwin",
-          reviews: [],
-          userProgress: {
-              currentChapter: 0,
-              totalChapters: 19,
-              readingTime: 480
-          },
-          updated: new Date(Date.now() - 10800000).toISOString()
-      },
-      {
-          id: 4,
-          title: "Harry Potter și Piatra Filosofală",
-          author: "J.K. Rowling",
-          genre: "Fantasy",
-          genres: ["Fantasy", "Adventure", "Young Adult"],
-          status: "ongoing",
-          rating: 4.6,
-          chapters: 17,
-          cover: "",
-          description: "Începutul aventurilor lui Harry Potter.",
-          publishDate: "1997-06-26",
-          publisher: "Bloomsbury",
-          reviews: [],
-          userProgress: {
-              currentChapter: 0,
-              totalChapters: 17,
-              readingTime: 400
-          },
-          updated: new Date(Date.now() - 1800000).toISOString()
-      },
-      {
-          id: 5,
-          title: "Pride and Prejudice",
-          author: "Jane Austen",
-          genre: "Romance",
-          genres: ["Romance", "Classic"],
-          status: "completed",
-          rating: 4.5,
-          chapters: 61,
-          cover: "",
-          description: "Un clasic al literaturii romantice.",
-          publishDate: "1813-01-28",
-          publisher: "T. Egerton",
-          reviews: [],
-          userProgress: {
-              currentChapter: 0,
-              totalChapters: 61,
-              readingTime: 900
-          },
-          updated: new Date(Date.now() - 14400000).toISOString()
-      },
-      {
-          id: 6,
-          title: "The Great Gatsby",
-          author: "F. Scott Fitzgerald",
-          genre: "Classic",
-          genres: ["Classic", "Tragedy"],
-          status: "completed",
-          rating: 4.3,
-          chapters: 9,
-          cover: "",
-          description: "Drama americană din anii '20.",
-          publishDate: "1925-04-10",
-          publisher: "Charles Scribner's Sons",
-          reviews: [],
-          userProgress: {
-              currentChapter: 0,
-              totalChapters: 9,
-              readingTime: 300
-          },
-          updated: new Date(Date.now() - 21600000).toISOString()
-      }
-  ],
+  books: [],
   
   genres: ["Toate", "Sci-Fi", "Fantasy", "Romance", "Thriller", "Mystery", "Classic", "Dystopian"],
 
   init() {
+      this.loadBooksFromBackend();
       this.loadUserData();
       this.renderUserActions();
       this.renderGenreFilters();
-      this.renderBooks();
       this.loadSettings();
       this.setupEventListeners();
       this.loadReaderPreferences();
+  },
+
+  async loadBooksFromBackend() {
+      try {
+          const response = await fetch('server/books.php');
+          const result = await response.json();
+          if (result.success) {
+              this.books = result.books;
+              this.renderBooks();
+          } else {
+              this.books = [];
+              this.renderBooks();
+              alert('Eroare la încărcarea cărților din baza de date!');
+          }
+      } catch (e) {
+          this.books = [];
+          this.renderBooks();
+          alert('Eroare la conectare cu serverul!');
+      }
   },
 
   loadUserData() {
@@ -179,7 +62,12 @@ const App = {
   renderUserActions() {
       const container = document.getElementById('userActions');
       if (this.currentUser) {
+          let adminBtn = '';
+          if (this.currentUser.role === 'admin') {
+              adminBtn = `<button class="auth-btn" onclick="App.showAdminPanel()">Admin</button>`;
+          }
           container.innerHTML = `
+              ${adminBtn}
               <div class="user-menu">
                   <div class="user-avatar" onclick="App.toggleUserDropdown()">
                       ${this.currentUser.name.charAt(0).toUpperCase()}
@@ -413,30 +301,86 @@ const App = {
       document.getElementById('authModal').classList.remove('show');
   },
 
-  login(event) {
+  async login(event) {
       event.preventDefault();
       const formData = new FormData(event.target);
-      // Simulate login
-      this.currentUser = { name: 'User', email: formData.get('email') };
-      this.renderUserActions();
-      this.closeAuthModal();
+      const data = {
+          email: formData.get('email'),
+          password: formData.get('password')
+      };
+
+      try {
+          const response = await fetch('server/login.php', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(data)
+          });
+
+          const result = await response.json();
+          
+          if (result.error) {
+              alert(result.error);
+              return;
+          }
+
+          this.currentUser = result.user;
+          this.renderUserActions();
+          this.closeAuthModal();
+      } catch (error) {
+          alert('Ошибка при входе: ' + error.message);
+      }
   },
 
-  register(event) {
+  async register(event) {
       event.preventDefault();
       const formData = new FormData(event.target);
-      // Simulate registration
-      this.currentUser = { name: formData.get('name'), email: formData.get('email') };
-      this.renderUserActions();
-      this.closeAuthModal();
+      const data = {
+          name: formData.get('name'),
+          email: formData.get('email'),
+          password: formData.get('password')
+      };
+
+      try {
+          const response = await fetch('server/register.php', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(data)
+          });
+
+          const result = await response.json();
+          
+          if (result.error) {
+              alert(result.error);
+              return;
+          }
+
+          this.currentUser = result.user;
+          this.renderUserActions();
+          this.closeAuthModal();
+      } catch (error) {
+          alert('Ошибка при регистрации: ' + error.message);
+      }
   },
 
-  logout() {
-      this.currentUser = null;
-      this.renderUserActions();
-      const dropdown = document.getElementById('userDropdown');
-      if (dropdown) {
-      dropdown.classList.remove('show');
+  async logout() {
+      try {
+          const response = await fetch('server/logout.php');
+          const result = await response.json();
+          
+          if (result.success) {
+              this.currentUser = null;
+              this.renderUserActions();
+              const dropdown = document.getElementById('userDropdown');
+              if (dropdown) {
+                  dropdown.classList.remove('show');
+              }
+          }
+      } catch (error) {
+          alert('Ошибка при выходе: ' + error.message);
       }
   },
 
@@ -826,7 +770,14 @@ const App = {
 
   toggleTheme() {
       const isLight = document.body.classList.toggle('light-theme');
-      localStorage.setItem('readerTheme', isLight ? 'light' : 'dark');
+      const theme = isLight ? 'light' : 'dark';
+      localStorage.setItem('readerTheme', theme);
+      // Обновляем значение в настройках
+      if (document.getElementById('themeSelect')) {
+          document.getElementById('themeSelect').value = theme;
+      }
+      // Обновляем настройки в объекте App
+      this.settings.theme = theme;
   },
 
   // Load reader preferences
@@ -977,6 +928,11 @@ const App = {
               document.getElementById('userDropdown')?.classList.remove('show');
           }
       });
+      // Admin: buton adăugare carte
+      const addBookBtn = document.getElementById('addBookBtn');
+      if (addBookBtn) {
+          addBookBtn.onclick = () => this.showAddBookForm();
+      }
   },
 
   // Placeholder methods
@@ -1004,42 +960,48 @@ const App = {
 
   // Settings methods
   loadSettings() {
-      // Simulează încărcarea setărilor (în viitor de la backend)
-      const savedSettings = {
-          theme: 'dark',
-          fontSize: 'medium'
+      // Загружаем тему из localStorage
+      const savedTheme = localStorage.getItem('readerTheme') || 'dark';
+      const savedFontSize = localStorage.getItem('readerFontSize') || 'medium';
+      
+      this.settings = {
+          theme: savedTheme,
+          fontSize: savedFontSize
       };
-      this.settings = savedSettings;
+      
       this.applySettings();
   },
 
   applySettings() {
+      // Применяем тему
       document.body.className = '';
       if (this.settings.theme === 'light') {
           document.body.classList.add('light-theme');
       }
-      // Remove previous font size classes
-      document.body.classList.remove('font-small', 'font-medium', 'font-large');
-      // Add the selected font size class
-      if (this.settings.fontSize === 'small') {
-          document.body.classList.add('font-small');
-      } else if (this.settings.fontSize === 'large') {
-          document.body.classList.add('font-large');
-      } else {
-          document.body.classList.add('font-medium');
+      
+      // Обновляем значение в селекте настроек
+      if (document.getElementById('themeSelect')) {
+          document.getElementById('themeSelect').value = this.settings.theme;
       }
+      
+      // Применяем размер шрифта
+      document.body.classList.remove('font-small', 'font-medium', 'font-large');
+      document.body.classList.add(`font-${this.settings.fontSize}`);
   },
 
   changeTheme(theme) {
       this.settings.theme = theme;
       if (theme === 'auto') {
-          // Detectează preferința sistemului
+          // Определяем предпочтение системы
           const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
           this.settings.theme = prefersDark ? 'dark' : 'light';
       }
+      
+      // Сохраняем в localStorage
+      localStorage.setItem('readerTheme', this.settings.theme);
+      
+      // Применяем настройки
       this.applySettings();
-      // Aici ai salva setările pe backend
-      console.log('Theme changed to:', theme);
   },
 
   changeFontSize(size) {
@@ -1057,14 +1019,34 @@ const App = {
       document.getElementById('changeNameModal').classList.remove('show');
   },
 
-  changeName(event) {
+  async changeName(event) {
       event.preventDefault();
       const formData = new FormData(event.target);
       const newName = formData.get('newName');
-      this.currentUser.name = newName;
-      this.renderUserActions();
-      this.closeChangeNameModal();
-      alert('Numele a fost schimbat cu succes!');
+
+      try {
+          const response = await fetch('server/change_name.php', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ newName })
+          });
+
+          const result = await response.json();
+          
+          if (result.error) {
+              alert(result.error);
+              return;
+          }
+
+          this.currentUser = result.user;
+          this.renderUserActions();
+          this.closeChangeNameModal();
+          alert('Numele a fost schimbat cu succes!');
+      } catch (error) {
+          alert('Ошибка при изменении имени: ' + error.message);
+      }
   },
 
   showChangePasswordModal() {
@@ -1075,25 +1057,69 @@ const App = {
       document.getElementById('changePasswordModal').classList.remove('show');
   },
 
-  changePassword(event) {
+  async changePassword(event) {
       event.preventDefault();
       const formData = new FormData(event.target);
+      const currentPassword = formData.get('currentPassword');
       const newPassword = formData.get('newPassword');
       const confirmPassword = formData.get('confirmPassword');
+
       if (newPassword !== confirmPassword) {
           alert('Parolele nu coincid!');
           return;
       }
-      // Aici ai face validarea pe backend
-      this.closeChangePasswordModal();
-      alert('Parola a fost schimbată cu succes!');
+
+      try {
+          const response = await fetch('server/change_password.php', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                  currentPassword,
+                  newPassword
+              })
+          });
+
+          const result = await response.json();
+          
+          if (result.error) {
+              alert(result.error);
+              return;
+          }
+
+          this.closeChangePasswordModal();
+          alert('Parola a fost schimbată cu succes!');
+      } catch (error) {
+          alert('Ошибка при изменении пароля: ' + error.message);
+      }
   },
 
-  deleteAccount() {
-      if (confirm('Ești sigur că vrei să ștergi contul? Această acțiune nu poate fi anulată.')) {
-          // Aici ai șterge contul pe backend
-          this.logout();
-          alert('Contul a fost șters.');
+  async deleteAccount() {
+      if (!confirm('Ești sigur că vrei să ștergi contul? Această acțiune nu poate fi anulată.')) {
+          return;
+      }
+
+      try {
+          const response = await fetch('server/delete_account.php', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json'
+              }
+          });
+
+          const result = await response.json();
+          
+          if (result.error) {
+              alert(result.error);
+              return;
+          }
+
+          this.currentUser = null;
+          this.renderUserActions();
+          alert('Contul a fost șters cu succes.');
+      } catch (error) {
+          alert('Ошибка при удалении аккаунта: ' + error.message);
       }
   },
 
@@ -1197,6 +1223,141 @@ const App = {
   loadReaderText(chapter) {
       // Implementați logică pentru a încărca textul capitolului
       console.log('Loading chapter text:', chapter);
+  },
+
+  showAdminPanel() {
+      if (!this.currentUser || this.currentUser.role !== 'admin') return;
+      document.querySelectorAll('.page-view').forEach(p => p.classList.remove('active'));
+      document.getElementById('adminPanelPage').style.display = '';
+      document.getElementById('adminPanelPage').classList.add('active');
+      this.renderAdminTabs();
+      this.fetchAdminBooks();
+  },
+
+  renderAdminTabs() {
+      const booksTab = document.getElementById('adminBooksTab');
+      const usersTab = document.getElementById('adminUsersTab');
+      const booksSection = document.getElementById('adminBooksSection');
+      const usersSection = document.getElementById('adminUsersSection');
+      booksTab.onclick = () => {
+          booksSection.style.display = '';
+          usersSection.style.display = 'none';
+      };
+      usersTab.onclick = () => {
+          booksSection.style.display = 'none';
+          usersSection.style.display = '';
+      };
+      // Implicit: tabul cărți activ
+      booksSection.style.display = '';
+      usersSection.style.display = 'none';
+  },
+
+  async fetchAdminBooks() {
+      try {
+          const response = await fetch('server/admin_books.php', {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json' }
+          });
+          const result = await response.json();
+          if (result.success) {
+              this.renderAdminBooks(result.books);
+          } else {
+              document.getElementById('adminBooksList').innerHTML = '<div style="color:red">Eroare la încărcarea cărților!</div>';
+          }
+      } catch (e) {
+          document.getElementById('adminBooksList').innerHTML = '<div style="color:red">Eroare la conectare cu serverul!</div>';
+      }
+  },
+
+  renderAdminBooks(books) {
+      const container = document.getElementById('adminBooksList');
+      if (!books.length) {
+          container.innerHTML = '<div>Nu există cărți în baza de date.</div>';
+          return;
+      }
+      container.innerHTML = `<table style="width:100%;border-collapse:collapse;">
+          <thead>
+              <tr style="background:#222;color:#fff;">
+                  <th style="padding:8px;">ID</th>
+                  <th style="padding:8px;">Titlu</th>
+                  <th style="padding:8px;">Autor</th>
+                  <th style="padding:8px;">Genuri</th>
+                  <th style="padding:8px;">Status</th>
+                  <th style="padding:8px;">Acțiuni</th>
+              </tr>
+          </thead>
+          <tbody>
+              ${books.map(book => `
+                  <tr>
+                      <td style="padding:8px;">${book.id}</td>
+                      <td style="padding:8px;">${book.title}</td>
+                      <td style="padding:8px;">${book.author}</td>
+                      <td style="padding:8px;">${book.genres || ''}</td>
+                      <td style="padding:8px;">${book.status}</td>
+                      <td style="padding:8px;">
+                          <button onclick="App.editAdminBook(${book.id})">Editează</button>
+                          <button onclick="App.deleteAdminBook(${book.id})" style="color:red;">Șterge</button>
+                      </td>
+                  </tr>
+              `).join('')}
+          </tbody>
+      </table>`;
+  },
+
+  showAddBookForm() {
+      const formContainer = document.getElementById('addBookFormContainer');
+      formContainer.style.display = '';
+      formContainer.innerHTML = `
+          <form id="adminAddBookForm" style="background:#222;padding:20px;border-radius:8px;margin-bottom:20px;">
+              <h3 style="color:#fff;">Adaugă carte nouă</h3>
+              <input name="title" class="form-input" placeholder="Titlu" required style="margin-bottom:10px;" />
+              <input name="author" class="form-input" placeholder="Autor" required style="margin-bottom:10px;" />
+              <input name="genres" class="form-input" placeholder="Genuri (ex: Fantasy,Adventure)" style="margin-bottom:10px;" />
+              <select name="status" class="form-input" style="margin-bottom:10px;">
+                  <option value="ongoing">În curs</option>
+                  <option value="completed">Completă</option>
+                  <option value="paused">Întreruptă</option>
+              </select>
+              <input name="rating" type="number" step="0.1" min="0" max="5" class="form-input" placeholder="Rating (0-5)" style="margin-bottom:10px;" />
+              <input name="chapters" type="number" min="1" class="form-input" placeholder="Număr capitole" style="margin-bottom:10px;" />
+              <input name="cover" class="form-input" placeholder="URL copertă (opțional)" style="margin-bottom:10px;" />
+              <input name="publish_date" type="date" class="form-input" placeholder="Data publicării" style="margin-bottom:10px;" />
+              <input name="publisher" class="form-input" placeholder="Editura" style="margin-bottom:10px;" />
+              <textarea name="description" class="form-input" placeholder="Descriere" style="margin-bottom:10px;"></textarea>
+              <button type="submit" class="form-btn">Adaugă</button>
+              <button type="button" class="form-btn" style="background:#444;margin-top:10px;" onclick="App.hideAddBookForm()">Anulează</button>
+          </form>
+      `;
+      document.getElementById('adminAddBookForm').onsubmit = (e) => this.submitAddBookForm(e);
+  },
+
+  hideAddBookForm() {
+      const formContainer = document.getElementById('addBookFormContainer');
+      formContainer.style.display = 'none';
+      formContainer.innerHTML = '';
+  },
+
+  async submitAddBookForm(e) {
+      e.preventDefault();
+      const form = e.target;
+      const data = Object.fromEntries(new FormData(form).entries());
+      try {
+          const response = await fetch('server/admin_books.php', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(data)
+          });
+          const result = await response.json();
+          if (result.success) {
+              this.hideAddBookForm();
+              this.fetchAdminBooks();
+              alert('Cartea a fost adăugată cu succes!');
+          } else {
+              alert(result.error || 'Eroare la adăugare carte!');
+          }
+      } catch (e) {
+          alert('Eroare la conectare cu serverul!');
+      }
   },
 };
 // Initialize the app after DOM is loaded

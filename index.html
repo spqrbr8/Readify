@@ -414,6 +414,28 @@
                 </button>
             </div>
         </div>
+
+        <!-- Admin Panel -->
+        <div id="adminPanelPage" class="page-view" style="display:none;">
+            <h2 class="section-title">
+                <div class="section-icon"></div>
+                Panou administrare
+            </h2>
+            <div class="admin-tabs">
+                <button class="admin-tab" id="adminBooksTab">Gestionare cărți</button>
+                <button class="admin-tab" id="adminUsersTab">Gestionare utilizatori</button>
+            </div>
+            <div id="adminBooksSection" class="admin-section">
+                <h3>Cărți</h3>
+                <div id="adminBooksList"></div>
+                <button id="addBookBtn" class="form-btn">Adaugă carte</button>
+                <div id="addBookFormContainer" style="display:none;"></div>
+            </div>
+            <div id="adminUsersSection" class="admin-section" style="display:none;">
+                <h3>Utilizatori</h3>
+                <div id="adminUsersList"></div>
+            </div>
+        </div>
     </main>
 
     <!-- Auth Modal -->
