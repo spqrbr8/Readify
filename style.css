@@ -1610,3 +1610,28 @@ body.light-theme .action-btn.active .icon {
 body.light-theme .action-btn:hover .icon {
     color: inherit;
 }
+
+.admin-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+.admin-tab {
+    background: #222;
+    color: #fff;
+    border: 1px solid #4f46e5;
+    border-radius: 6px 6px 0 0;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.3s;
+}
+.admin-tab:hover {
+    background: #4f46e5;
+}
+.admin-section {
+    background: #181818;
+    padding: 20px;
+    border-radius: 0 0 8px 8px;
+    margin-bottom: 30px;
+}

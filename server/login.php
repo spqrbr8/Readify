@@ -19,7 +19,7 @@ $password = $data['password'];
 
 try {
     // Поиск пользователя
-    $stmt = $pdo->prepare("SELECT id, name, email, password FROM users WHERE email = ?");
+    $stmt = $pdo->prepare("SELECT id, name, email, password, role FROM users WHERE email = ?");
     $stmt->execute([$email]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -39,7 +39,8 @@ try {
         'user' => [
             'id' => $user['id'],
             'name' => $user['name'],
-            'email' => $user['email']
+            'email' => $user['email'],
+            'role' => $user['role']
         ]
     ]);
 
