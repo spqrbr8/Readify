@@ -1359,6 +1359,32 @@ const App = {
           alert('Eroare la conectare cu serverul!');
       }
   },
+
+  async deleteAdminBook(bookId) {
+      if (!confirm('Sigur doriți să ștergeți această carte?')) return;
+      
+      try {
+          const response = await fetch('server/admin_books.php', {
+              method: 'DELETE',
+              headers: {
+                  'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ id: bookId })
+          });
+          
+          const result = await response.json();
+          
+          if (result.success) {
+              alert('Cartea a fost ștearsă cu succes!');
+              this.fetchAdminBooks(); // Reîncarcă lista de cărți
+          } else {
+              alert('Eroare la ștergerea cărții: ' + (result.error || 'Eroare necunoscută'));
+          }
+      } catch (error) {
+          console.error('Eroare la ștergerea cărții:', error);
+          alert('Eroare la conectare cu serverul!');
+      }
+  },
 };
 // Initialize the app after DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
