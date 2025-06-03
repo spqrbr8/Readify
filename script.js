@@ -20,6 +20,7 @@ const App = {
   genres: ["Toate", "Sci-Fi", "Fantasy", "Romance", "Thriller", "Mystery", "Classic", "Dystopian"],
 
   init() {
+      this.checkSession();
       this.loadBooksFromBackend();
       this.loadUserData();
       this.renderUserActions();
@@ -27,6 +28,19 @@ const App = {
       this.loadSettings();
       this.setupEventListeners();
       this.loadReaderPreferences();
+  },
+
+  async checkSession() {
+      try {
+          const response = await fetch('server/check_session.php');
+          const result = await response.json();
+          if (result.success && result.user) {
+              this.currentUser = result.user;
+              this.renderUserActions();
+          }
+      } catch (error) {
+          console.error('Eroare la verificarea sesiunii:', error);
+      }
   },
 
   async loadBooksFromBackend() {
