@@ -118,6 +118,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `email` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `password` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `role` enum('user','admin') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'user',
+  `status` enum('active','inactive','blocked') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'active',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -129,9 +130,9 @@ CREATE TABLE IF NOT EXISTS `users` (
 -- Eliminarea datelor din tabel `users`
 --
 
-INSERT INTO `users` (`id`, `name`, `email`, `password`, `role`, `created_at`, `updated_at`) VALUES
-(1, 'Anton', 'untilastefan8@gmail.com', '$2y$10$sLWtt/ADByhQzHE4L2EW6OtzTcFpAxIPAVESAyDIe/M9Oywg0BGLe', 'user', '2025-06-01 15:09:31', '2025-06-01 15:09:31'),
-(5, 'admin', 'admin@readify.com', '$2y$10$zWWAqZrH5SoQUUZZLQbVp.17tlKNaZlURr17ZDr28uotW8ZimqPC6', 'admin', '2025-06-01 19:08:57', '2025-06-01 19:09:54');
+INSERT INTO `users` (`id`, `name`, `email`, `password`, `role`, `status`, `created_at`, `updated_at`) VALUES
+(1, 'Anton', 'untilastefan8@gmail.com', '$2y$10$sLWtt/ADByhQzHE4L2EW6OtzTcFpAxIPAVESAyDIe/M9Oywg0BGLe', 'user', 'active', '2025-06-01 15:09:31', '2025-06-01 15:09:31'),
+(5, 'admin', 'admin@readify.com', '$2y$10$zWWAqZrH5SoQUUZZLQbVp.17tlKNaZlURr17ZDr28uotW8ZimqPC6', 'admin', 'active', '2025-06-01 19:08:57', '2025-06-01 19:09:54');
 
 --
 -- Constrângeri pentru tabele eliminate

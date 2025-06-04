@@ -1635,3 +1635,134 @@ body.light-theme .action-btn:hover .icon {
     border-radius: 0 0 8px 8px;
     margin-bottom: 30px;
 }
+
+.admin-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    margin-right: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.admin-btn.edit {
+    background: #4f46e5;
+    color: white;
+    border: 1px solid #4f46e5;
+}
+
+.admin-btn.edit:hover {
+    background: #3730a3;
+    border-color: #3730a3;
+}
+
+.admin-btn.delete {
+    background: #ef4444;
+    color: white;
+    border: 1px solid #ef4444;
+}
+
+.admin-btn.delete:hover {
+    background: #dc2626;
+    border-color: #dc2626;
+}
+
+/* Light theme styles for admin buttons */
+body.light-theme .admin-btn.edit {
+    background: #4f46e5;
+    color: white;
+    border: 1px solid #4f46e5;
+}
+
+body.light-theme .admin-btn.edit:hover {
+    background: #3730a3;
+    border-color: #3730a3;
+}
+
+body.light-theme .admin-btn.delete {
+    background: #ef4444;
+    color: white;
+    border: 1px solid #ef4444;
+}
+
+body.light-theme .admin-btn.delete:hover {
+    background: #dc2626;
+    border-color: #dc2626;
+}
+
+body.light-theme .admin-section {
+    background: #fff;
+    color: #23272f;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 2px 8px rgba(109,40,217,0.04);
+}
+body.light-theme .admin-tabs {
+    background: transparent;
+}
+body.light-theme .admin-tab {
+    background: #f1f5f9;
+    color: #4f46e5;
+    border: 1px solid #e5e7eb;
+}
+body.light-theme .admin-tab:hover,
+body.light-theme .admin-tab.active {
+    background: #6d28d9;
+    color: #fff;
+    border-color: #6d28d9;
+}
+body.light-theme .admin-section table {
+    background: #fff;
+    color: #23272f;
+    border-collapse: collapse;
+    width: 100%;
+}
+body.light-theme .admin-section th {
+    background: #ede9fe;
+    color: #23272f;
+    border-bottom: 1px solid #e5e7eb;
+}
+body.light-theme .admin-section td {
+    background: #fff;
+    color: #23272f;
+    border-bottom: 1px solid #e5e7eb;
+}
+body.light-theme .admin-section tr:last-child td {
+    border-bottom: none;
+}
+
+body.light-theme #adminAddBookForm {
+    background: #fff !important;
+    color: #23272f;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 2px 8px rgba(109,40,217,0.04);
+}
+body.light-theme #adminAddBookForm h3 {
+    color: #4f46e5 !important;
+}
+body.light-theme #adminAddBookForm .form-input,
+body.light-theme #adminAddBookForm textarea,
+body.light-theme #adminAddBookForm select {
+    background: #f1f5f9 !important;
+    color: #23272f !important;
+    border: 1px solid #e5e7eb !important;
+}
+body.light-theme #adminAddBookForm .form-btn {
+    background: #6d28d9 !important;
+    color: #fff !important;
+    border: none !important;
+}
+body.light-theme #adminAddBookForm .form-btn:hover {
+    background: #4f46e5 !important;
+}
+body.light-theme #adminAddBookForm .form-btn:last-child {
+    background: #444 !important;
+    color: #fff !important;
+    border: none !important;
+}
+body.light-theme #adminAddBookForm .form-btn:last-child:hover {
+    background: #23272f !important;
+}

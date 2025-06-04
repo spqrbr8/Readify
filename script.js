@@ -1253,17 +1253,23 @@ const App = {
       const usersTab = document.getElementById('adminUsersTab');
       const booksSection = document.getElementById('adminBooksSection');
       const usersSection = document.getElementById('adminUsersSection');
+      
       booksTab.onclick = () => {
           booksSection.style.display = '';
           usersSection.style.display = 'none';
+          this.fetchAdminBooks();
       };
+      
       usersTab.onclick = () => {
           booksSection.style.display = 'none';
           usersSection.style.display = '';
+          this.fetchAdminUsers();
       };
+      
       // Implicit: tabul cărți activ
       booksSection.style.display = '';
       usersSection.style.display = 'none';
+      this.fetchAdminBooks();
   },
 
   async fetchAdminBooks() {
@@ -1309,8 +1315,8 @@ const App = {
                       <td style="padding:8px;">${book.genres || ''}</td>
                       <td style="padding:8px;">${book.status}</td>
                       <td style="padding:8px;">
-                          <button onclick="App.editAdminBook(${book.id})">Editează</button>
-                          <button onclick="App.deleteAdminBook(${book.id})" style="color:red;">Șterge</button>
+                          <button class="admin-btn edit" onclick="App.editAdminBook(${book.id})">Editează</button>
+                          <button class="admin-btn delete" onclick="App.deleteAdminBook(${book.id})">Șterge</button>
                       </td>
                   </tr>
               `).join('')}
@@ -1396,6 +1402,139 @@ const App = {
           }
       } catch (error) {
           console.error('Eroare la ștergerea cărții:', error);
+          alert('Eroare la conectare cu serverul!');
+      }
+  },
+
+  async fetchAdminUsers() {
+      try {
+          const response = await fetch('server/admin_users.php', {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json' }
+          });
+          const result = await response.json();
+          if (result.success) {
+              this.renderAdminUsers(result.users);
+          } else {
+              document.getElementById('adminUsersList').innerHTML = '<div style="color:red">Eroare la încărcarea utilizatorilor!</div>';
+          }
+      } catch (e) {
+          document.getElementById('adminUsersList').innerHTML = '<div style="color:red">Eroare la conectare cu serverul!</div>';
+      }
+  },
+
+  renderAdminUsers(users) {
+      const container = document.getElementById('adminUsersList');
+      if (!users.length) {
+          container.innerHTML = '<div>Nu există utilizatori în baza de date.</div>';
+          return;
+      }
+      container.innerHTML = `<table style="width:100%;border-collapse:collapse;">
+          <thead>
+              <tr style="background:#222;color:#fff;">
+                  <th style="padding:8px;">ID</th>
+                  <th style="padding:8px;">Nume</th>
+                  <th style="padding:8px;">Email</th>
+                  <th style="padding:8px;">Rol</th>
+                  <th style="padding:8px;">Data creării</th>
+                  <th style="padding:8px;">Acțiuni</th>
+              </tr>
+          </thead>
+          <tbody>
+              ${users.map(user => `
+                  <tr>
+                      <td style="padding:8px;">${user.id}</td>
+                      <td style="padding:8px;">${user.name}</td>
+                      <td style="padding:8px;">${user.email}</td>
+                      <td style="padding:8px;">${user.role}</td>
+                      <td style="padding:8px;">${new Date(user.created_at).toLocaleDateString('ro-RO')}</td>
+                      <td style="padding:8px;">
+                          <button class="admin-btn edit" onclick="App.editAdminUser(${user.id})">Editează</button>
+                          ${user.id !== this.currentUser.id ? 
+                              `<button class="admin-btn delete" onclick="App.deleteAdminUser(${user.id})">Șterge</button>` : 
+                              ''}
+                      </td>
+                  </tr>
+              `).join('')}
+          </tbody>
+      </table>`;
+  },
+
+  async editAdminUser(userId) {
+      try {
+          const response = await fetch(`server/get_user.php?id=${userId}`);
+          const result = await response.json();
+          
+          if (result.success) {
+              const user = result.user;
+              document.getElementById('editUserId').value = user.id;
+              document.getElementById('editUserName').value = user.name;
+              document.getElementById('editUserEmail').value = user.email;
+              document.getElementById('editUserRole').value = user.role;
+              document.getElementById('editUserStatus').value = user.status || 'active';
+              document.getElementById('editUserPassword').value = '';
+              
+              document.getElementById('editUserModal').classList.add('show');
+          } else {
+              alert('Eroare la încărcarea datelor utilizatorului!');
+          }
+      } catch (error) {
+          console.error('Eroare:', error);
+          alert('Eroare la încărcarea datelor utilizatorului!');
+      }
+  },
+
+  closeEditUserModal() {
+      document.getElementById('editUserModal').classList.remove('show');
+  },
+
+  async submitEditUser(event) {
+      event.preventDefault();
+      
+      const formData = new FormData(event.target);
+      const userId = formData.get('userId');
+      
+      try {
+          const response = await fetch('server/edit_user.php', {
+              method: 'POST',
+              body: formData
+          });
+          
+          const result = await response.json();
+          
+          if (result.success) {
+              alert('Utilizatorul a fost actualizat cu succes!');
+              this.closeEditUserModal();
+              this.fetchAdminUsers(); // Reîncarcă lista de utilizatori
+          } else {
+              alert(result.message || 'Eroare la actualizarea utilizatorului!');
+          }
+      } catch (error) {
+          console.error('Eroare:', error);
+          alert('Eroare la actualizarea utilizatorului!');
+      }
+  },
+
+  async deleteAdminUser(userId) {
+      if (!confirm('Sigur doriți să ștergeți acest utilizator?')) return;
+      
+      try {
+          const response = await fetch('server/admin_users.php', {
+              method: 'DELETE',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: userId })
+          });
+          
+          const result = await response.json();
+          
+          if (result.success) {
+              alert('Utilizatorul a fost șters cu succes!');
+              this.fetchAdminUsers();
+          } else {
+              alert('Eroare la ștergerea utilizatorului: ' + (result.error || 'Eroare necunoscută'));
+          }
+      } catch (error) {
+          console.error('Eroare la ștergerea utilizatorului:', error);
           alert('Eroare la conectare cu serverul!');
       }
   },
