@@ -442,6 +442,14 @@ const App = {
               coverImg.alt = 'Book cover';
           }
       }
+
+      // Content
+      const contentContainer = document.getElementById('bookContent');
+      if (contentContainer && book.content) {
+          contentContainer.innerHTML = `<div class="book-content">${book.content}</div>`;
+      } else if (contentContainer) {
+          contentContainer.innerHTML = '<div class="book-content">Conținutul cărții nu este disponibil.</div>';
+      }
   },
 
   renderRating(book) {
@@ -600,36 +608,33 @@ const App = {
 
   async loadChapter(chapterNumber) {
       try {
-          // Show loading state
+          // Показываем состояние загрузки
           const textContainer = document.getElementById('readerText');
           textContainer.innerHTML = '<div class="loading">Se încarcă...</div>';
           
-          // In a real app, this would be an API call
-          // const response = await fetch(`/api/books/${this.currentBook.id}/chapters/${chapterNumber}`);
-          // const chapterData = await response.json();
+          // Получаем данные книги с сервера
+          const response = await fetch(`server/get_chapter.php?bookId=${this.currentBook.id}&chapter=${chapterNumber}`);
+          const result = await response.json();
           
-          // For demo, we'll use placeholder text
-          const chapterData = {
-              title: `Capitol ${chapterNumber}`,
-              content: this.generateChapterText(chapterNumber),
-              wordCount: 1000
-          };
+          if (!result.success) {
+              throw new Error(result.error || 'Eroare la încărcarea capitolului');
+          }
           
-          // Update UI
-          document.getElementById('readerChapterTitle').textContent = chapterData.title;
-          textContainer.textContent = chapterData.content;
+          // Обновляем UI
+          document.getElementById('readerChapterTitle').textContent = `Capitol ${chapterNumber}`;
+          textContainer.textContent = result.content || 'Conținutul capitolului nu este disponibil.';
           
-          // Update navigation buttons
+          // Обновляем кнопки навигации
           const prevBtn = document.querySelector('.nav-btn:first-child');
           const nextBtn = document.querySelector('.nav-btn:last-child');
           prevBtn.disabled = chapterNumber <= 1;
           nextBtn.disabled = chapterNumber >= this.currentBook.chapters;
           
-          // Update progress
+          // Обновляем прогресс
           const progress = (chapterNumber / this.currentBook.chapters) * 100;
           this.updateReaderProgress(Math.round(progress));
           
-          // Restore scroll position if exists
+          // Восстанавливаем позицию прокрутки, если она существует
           if (this.currentBook.userProgress.lastReadPosition && 
               this.currentBook.userProgress.lastChapter === chapterNumber) {
               textContainer.scrollTop = this.currentBook.userProgress.lastReadPosition;
@@ -637,7 +642,7 @@ const App = {
               textContainer.scrollTop = 0;
           }
           
-          // Save progress
+          // Сохраняем прогресс
           await this.saveReadingProgress(chapterNumber);
           
       } catch (error) {
@@ -1344,6 +1349,7 @@ const App = {
               <input name="publish_date" type="date" class="form-input" placeholder="Data publicării" style="margin-bottom:10px;" />
               <input name="publisher" class="form-input" placeholder="Editura" style="margin-bottom:10px;" />
               <textarea name="description" class="form-input" placeholder="Descriere" style="margin-bottom:10px;"></textarea>
+              <textarea name="content" class="form-input" placeholder="Conținutul cărții" style="margin-bottom:10px;min-height:200px;"></textarea>
               <button type="submit" class="form-btn">Adaugă</button>
               <button type="button" class="form-btn" style="background:#444;margin-top:10px;" onclick="App.hideAddBookForm()">Anulează</button>
           </form>
@@ -1535,6 +1541,74 @@ const App = {
           }
       } catch (error) {
           console.error('Eroare la ștergerea utilizatorului:', error);
+          alert('Eroare la conectare cu serverul!');
+      }
+  },
+
+  async editAdminBook(bookId) {
+      try {
+          const response = await fetch(`server/admin_books.php?id=${bookId}`);
+          const result = await response.json();
+          
+          if (result.success) {
+              const book = result.book;
+              const formContainer = document.getElementById('addBookFormContainer');
+              formContainer.style.display = '';
+              formContainer.innerHTML = `
+                  <form id="adminEditBookForm" style="background:#222;padding:20px;border-radius:8px;margin-bottom:20px;">
+                      <h3 style="color:#fff;">Editează carte</h3>
+                      <input type="hidden" name="id" value="${book.id}">
+                      <input name="title" class="form-input" placeholder="Titlu" value="${book.title}" required style="margin-bottom:10px;" />
+                      <input name="author" class="form-input" placeholder="Autor" value="${book.author}" required style="margin-bottom:10px;" />
+                      <input name="genres" class="form-input" placeholder="Genuri (ex: Fantasy,Adventure)" value="${book.genres || ''}" style="margin-bottom:10px;" />
+                      <select name="status" class="form-input" style="margin-bottom:10px;">
+                          <option value="ongoing" ${book.status === 'ongoing' ? 'selected' : ''}>În curs</option>
+                          <option value="completed" ${book.status === 'completed' ? 'selected' : ''}>Completă</option>
+                          <option value="paused" ${book.status === 'paused' ? 'selected' : ''}>Întreruptă</option>
+                      </select>
+                      <input name="rating" type="number" step="0.1" min="0" max="5" class="form-input" placeholder="Rating (0-5)" value="${book.rating || ''}" style="margin-bottom:10px;" />
+                      <input name="chapters" type="number" min="1" class="form-input" placeholder="Număr capitole" value="${book.chapters || ''}" style="margin-bottom:10px;" />
+                      <input name="cover" class="form-input" placeholder="URL copertă (opțional)" value="${book.cover || ''}" style="margin-bottom:10px;" />
+                      <input name="publish_date" type="date" class="form-input" placeholder="Data publicării" value="${book.publish_date || ''}" style="margin-bottom:10px;" />
+                      <input name="publisher" class="form-input" placeholder="Editura" value="${book.publisher || ''}" style="margin-bottom:10px;" />
+                      <textarea name="description" class="form-input" placeholder="Descriere" style="margin-bottom:10px;">${book.description || ''}</textarea>
+                      <textarea name="content" class="form-input" placeholder="Conținutul cărții" style="margin-bottom:10px;min-height:400px;">${book.content || ''}</textarea>
+                      <button type="submit" class="form-btn">Salvează modificările</button>
+                      <button type="button" class="form-btn" style="background:#444;margin-top:10px;" onclick="App.hideAddBookForm()">Anulează</button>
+                  </form>
+              `;
+              document.getElementById('adminEditBookForm').onsubmit = (e) => this.submitEditBookForm(e);
+          } else {
+              alert('Eroare la încărcarea datelor cărții!');
+          }
+      } catch (error) {
+          console.error('Eroare:', error);
+          alert('Eroare la încărcarea datelor cărții!');
+      }
+  },
+
+  async submitEditBookForm(e) {
+      e.preventDefault();
+      const form = e.target;
+      const data = Object.fromEntries(new FormData(form).entries());
+      const bookId = data.id;
+      delete data.id;
+      
+      try {
+          const response = await fetch('server/admin_books.php', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: bookId, ...data })
+          });
+          const result = await response.json();
+          if (result.success) {
+              this.hideAddBookForm();
+              this.fetchAdminBooks();
+              alert('Cartea a fost actualizată cu succes!');
+          } else {
+              alert(result.error || 'Eroare la actualizarea cărții!');
+          }
+      } catch (e) {
           alert('Eroare la conectare cu serverul!');
       }
   },

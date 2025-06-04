@@ -21,7 +21,20 @@ if (!$user || $user['role'] !== 'admin') {
 $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method === 'GET') {
-    // Listare cărți
+    // Если передан ID, возвращаем данные конкретной книги
+    if (isset($_GET['id'])) {
+        $stmt = $pdo->prepare('SELECT * FROM books WHERE id = ?');
+        $stmt->execute([$_GET['id']]);
+        $book = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($book) {
+            echo json_encode(['success' => true, 'book' => $book]);
+        } else {
+            echo json_encode(['error' => 'Cartea nu a fost găsită']);
+        }
+        exit;
+    }
+    
+    // Иначе возвращаем список всех книг
     $stmt = $pdo->query('SELECT * FROM books ORDER BY created_at DESC');
     $books = $stmt->fetchAll(PDO::FETCH_ASSOC);
     echo json_encode(['success' => true, 'books' => $books]);
@@ -32,14 +45,14 @@ $data = json_decode(file_get_contents('php://input'), true);
 
 if ($method === 'POST') {
     // Adăugare carte
-    $fields = ['title','author','genres','status','rating','chapters','cover','description','publish_date','publisher'];
+    $fields = ['title','author','genres','status','rating','chapters','cover','description','content','publish_date','publisher'];
     $values = [];
     foreach ($fields as $f) {
         $values[$f] = isset($data[$f]) ? $data[$f] : null;
     }
-    $stmt = $pdo->prepare('INSERT INTO books (title, author, genres, status, rating, chapters, cover, description, publish_date, publisher) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    $stmt = $pdo->prepare('INSERT INTO books (title, author, genres, status, rating, chapters, cover, description, content, publish_date, publisher) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
     $stmt->execute([
-        $values['title'], $values['author'], $values['genres'], $values['status'], $values['rating'], $values['chapters'], $values['cover'], $values['description'], $values['publish_date'], $values['publisher']
+        $values['title'], $values['author'], $values['genres'], $values['status'], $values['rating'], $values['chapters'], $values['cover'], $values['description'], $values['content'], $values['publish_date'], $values['publisher']
     ]);
     echo json_encode(['success' => true, 'id' => $pdo->lastInsertId()]);
     exit;
@@ -51,7 +64,7 @@ if ($method === 'PUT') {
         echo json_encode(['error' => 'ID carte lipsă']);
         exit;
     }
-    $fields = ['title','author','genres','status','rating','chapters','cover','description','publish_date','publisher'];
+    $fields = ['title','author','genres','status','rating','chapters','cover','description','content','publish_date','publisher'];
     $set = [];
     $params = [];
     foreach ($fields as $f) {

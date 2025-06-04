@@ -1766,3 +1766,102 @@ body.light-theme #adminAddBookForm .form-btn:last-child {
 body.light-theme #adminAddBookForm .form-btn:last-child:hover {
     background: #23272f !important;
 }
+
+.book-content {
+    background: #1a1a1a;
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 20px;
+    line-height: 1.6;
+    font-size: 16px;
+    color: #e5e5e5;
+    white-space: pre-wrap;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+body.light-theme .book-content {
+    background: #f8f9fa;
+    color: #23272f;
+    border: 1px solid #e5e7eb;
+}
+
+#adminAddBookForm textarea[name="content"] {
+    font-family: monospace;
+    line-height: 1.5;
+    resize: vertical;
+}
+
+.edit-book-form {
+    background: var(--bg-secondary);
+    padding: 2rem;
+    border-radius: 8px;
+    margin: 2rem 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.edit-book-form h2 {
+    color: var(--text-primary);
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+}
+
+.edit-book-form .form-group {
+    margin-bottom: 1.5rem;
+}
+
+.edit-book-form label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.edit-book-form input[type="text"],
+.edit-book-form input[type="number"],
+.edit-book-form input[type="date"],
+.edit-book-form textarea,
+.edit-book-form select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+
+.edit-book-form textarea {
+    min-height: 200px;
+    resize: vertical;
+}
+
+.edit-book-form .form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.edit-book-form button {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.edit-book-form button[type="submit"] {
+    background: var(--accent-color);
+    color: white;
+}
+
+.edit-book-form button[type="button"] {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.edit-book-form button:hover {
+    opacity: 0.9;
+}
