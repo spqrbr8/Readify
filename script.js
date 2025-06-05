@@ -414,30 +414,37 @@ const App = {
   },
 
   renderBookDetails(book) {
+      // Обновляем основные детали книги
       document.getElementById('bookTitleLarge').textContent = book.title;
       document.getElementById('bookAuthorLink').textContent = book.author;
-      document.getElementById('bookAuthorLink').onclick = () => this.showAuthorBooks(book.author);
-
-      // Genuri
-      const genresContainer = document.getElementById('bookGenres');
-      genresContainer.innerHTML = (book.genres || []).map(genre =>
-          `<span class="genre-tag" onclick="App.filterByGenre('${genre}')">${genre}</span>`
-      ).join('');
-
+      document.getElementById('bookDescription').textContent = book.description;
+      
+      // Обновляем мета-информацию
+      document.getElementById('bookStatus').textContent = this.getStatusText(book.status);
+      document.getElementById('bookChapters').textContent = book.chapters;
+      document.getElementById('bookPublishDate').textContent = book.published_date;
+      document.getElementById('bookPublisher').textContent = book.publisher;
+      
+      // Обновляем рейтинг
       this.renderRating(book);
-      this.renderBookMeta(book);
+      
+      // Обновляем жанры
+      const genresContainer = document.getElementById('bookGenres');
+      genresContainer.innerHTML = book.genres.map(genre => 
+          `<span class="genre-tag">${genre}</span>`
+      ).join('');
+      
+      // Обновляем прогресс чтения
       this.renderReadingProgress(book);
+      
+      // Обновляем список глав
+      this.renderChaptersList(book);
+      
+      // Обновляем отзывы
       this.renderReviews(book);
+      
+      // Обновляем рекомендации
       this.renderRecommendations(book);
-      this.updateFavoriteButton(book.id);
-
-      // Content
-      const contentContainer = document.getElementById('bookContent');
-      if (contentContainer && book.content) {
-          contentContainer.innerHTML = `<div class="book-content">${book.content}</div>`;
-      } else if (contentContainer) {
-          contentContainer.innerHTML = '<div class="book-content">Conținutul cărții nu este disponibil.</div>';
-      }
   },
 
   renderRating(book) {
@@ -473,14 +480,6 @@ const App = {
               </div>
           `;
       }).reverse().join('');
-  },
-
-  renderBookMeta(book) {
-      document.getElementById('bookStatus').textContent = this.getStatusText(book.status);
-      document.getElementById('bookChapters').textContent = book.chapters;
-      document.getElementById('bookPublishDate').textContent = book.publishDate ? new Date(book.publishDate).toLocaleDateString('ro-RO') : '';
-      document.getElementById('bookPublisher').textContent = book.publisher || '';
-      document.getElementById('bookDescription').textContent = book.description || '';
   },
 
   renderReadingProgress(book) {
