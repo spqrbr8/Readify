@@ -935,10 +935,17 @@ body.font-large .modal-content {
 }
 
 .book-cover-large {
-    position: relative;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: unset;
+    position: static;
+    border-radius: 0;
+    overflow: unset;
+    box-shadow: none;
+    background: none;
+    padding: 0;
+    margin: 0;
 }
 
 .book-cover-large img {
@@ -948,21 +955,7 @@ body.font-large .modal-content {
 }
 
 .cover-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0,0,0,0.7);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transition: opacity 0.3s;
-}
-
-.book-cover-large:hover .cover-overlay {
-    opacity: 1;
+    display: none;
 }
 
 .start-reading-btn {

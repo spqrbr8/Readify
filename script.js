@@ -431,18 +431,6 @@ const App = {
       this.renderRecommendations(book);
       this.updateFavoriteButton(book.id);
 
-      // Cover
-      const coverImg = document.getElementById('bookCoverLarge');
-      if (coverImg) {
-          if (book.cover) {
-              coverImg.src = book.cover;
-              coverImg.alt = book.title;
-          } else {
-              coverImg.src = '';
-              coverImg.alt = 'Book cover';
-          }
-      }
-
       // Content
       const contentContainer = document.getElementById('bookContent');
       if (contentContainer && book.content) {
