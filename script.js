@@ -1652,6 +1652,13 @@ const App = {
           alert('Eroare la conectare cu serverul!');
       }
   },
+
+  downloadPDF: function() {
+      if (!this.currentBook) return;
+      
+      // Redirecționăm către endpoint-ul de descărcare PDF
+      window.location.href = `server/download_pdf.php?book_id=${this.currentBook.id}`;
+  },
 };
 // Initialize the app after DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
