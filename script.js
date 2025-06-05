@@ -413,7 +413,18 @@ const App = {
       this.addToHistory(bookId);
   },
 
-  renderBookDetails(book) {
+  async renderBookDetails(book) {
+      // Загружаем актуальные данные книги с сервера
+      try {
+          const response = await fetch(`server/getBook.php?id=${book.id}`);
+          const data = await response.json();
+          if (data.success) {
+              book = data.book; // Обновляем объект книги актуальными данными
+          }
+      } catch (error) {
+          console.error('Eroare la încărcarea detaliilor cărții:', error);
+      }
+
       // Обновляем основные детали книги
       document.getElementById('bookTitleLarge').textContent = book.title;
       document.getElementById('bookAuthorLink').textContent = book.author;
@@ -507,27 +518,48 @@ const App = {
   },
 
   renderReviews(book) {
-      const container = document.getElementById('reviewsList');
-      const reviews = book.reviews || [];
-      if (reviews.length === 0) {
-          container.innerHTML = '<p>Nu există recenzii încă. Fii primul care scrie o recenzie!</p>';
-          return;
-      }
-      container.innerHTML = reviews.map(review => `
-          <div class="review-item">
-              <div class="review-header">
-                  <span class="review-author">${review.user}</span>
-                  <span class="review-date">${new Date(review.date).toLocaleDateString('ro-RO')}</span>
-              </div>
-              <div class="review-rating">${'★'.repeat(review.rating)}${'☆'.repeat(5 - review.rating)}</div>
-              <p class="review-text">${review.text}</p>
-              <div class="review-helpful">
-                  <button class="helpful-btn" onclick="App.markReviewHelpful(${review.id})">
-                      👍 Util (${review.helpful})
-                  </button>
-              </div>
-          </div>
-      `).join('');
+      const reviewsContainer = document.getElementById('reviewsList');
+      if (!reviewsContainer) return;
+
+      // Очищаем контейнер
+      reviewsContainer.innerHTML = '';
+
+      // Загружаем отзывы с сервера
+      fetch(`server/getReviews.php?bookId=${book.id}`)
+          .then(res => res.json())
+          .then(data => {
+              if (!data.success) {
+                  console.error('Eroare la încărcarea recenziilor:', data.message);
+                  return;
+              }
+
+              const reviews = data.reviews;
+              if (!reviews || reviews.length === 0) {
+                  reviewsContainer.innerHTML = '<p class="no-reviews">Nu există recenzii pentru această carte.</p>';
+                  return;
+              }
+
+              // Отображаем каждый отзыв
+              reviews.forEach(review => {
+                  const reviewElement = document.createElement('div');
+                  reviewElement.className = 'review';
+                  reviewElement.innerHTML = `
+                      <div class="review-header">
+                          <div class="review-author">${review.author}</div>
+                          <div class="review-rating">
+                              ${'★'.repeat(review.rating)}${'☆'.repeat(5 - review.rating)}
+                          </div>
+                          <div class="review-date">${new Date(review.created_at).toLocaleDateString('ro-RO')}</div>
+                      </div>
+                      <div class="review-content">${review.comment}</div>
+                  `;
+                  reviewsContainer.appendChild(reviewElement);
+              });
+          })
+          .catch(err => {
+              console.error('Eroare la încărcarea recenziilor:', err);
+              reviewsContainer.innerHTML = '<p class="error-message">A apărut o eroare la încărcarea recenziilor.</p>';
+          });
   },
 
   renderRecommendations(book) {
@@ -863,31 +895,52 @@ const App = {
       });
   },
 
-  submitReview(event) {
+  async submitReview(event) {
       event.preventDefault();
       if (!this.selectedReviewRating) {
           alert('Te rog să selectezi un rating!');
           return;
       }
+
       const formData = new FormData(event.target);
       const reviewText = formData.get('reviewText');
-      const newReview = {
-          id: Date.now(),
-          user: this.currentUser.name,
-          rating: this.selectedReviewRating,
-          text: reviewText,
-          date: new Date().toISOString(),
-          helpful: 0
-      };
-      if (!this.currentBook.reviews) {
-          this.currentBook.reviews = [];
+
+      try {
+          const response = await fetch('server/addReview.php', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                  bookId: this.currentBook.id,
+                  author: this.currentUser.name,
+                  rating: this.selectedReviewRating,
+                  comment: reviewText
+              })
+          });
+
+          const result = await response.json();
+          
+          if (result.success) {
+              // Очищаем форму
+              event.target.reset();
+              this.selectedReviewRating = 0;
+              this.updateStarDisplay(document.querySelectorAll('.star-input'), 0);
+              
+              // Закрываем модальное окно
+              this.closeReviewModal();
+              
+              // Обновляем отзывы
+              await this.renderReviews(this.currentBook);
+              
+              alert('Recenzia a fost adăugată cu succes!');
+          } else {
+              alert('Eroare la adăugarea recenziei: ' + result.message);
+          }
+      } catch (error) {
+          console.error('Eroare la trimiterea recenziei:', error);
+          alert('A apărut o eroare la trimiterea recenziei. Te rog să încerci din nou.');
       }
-      this.currentBook.reviews.unshift(newReview);
-      this.renderReviews(this.currentBook);
-      this.renderRating(this.currentBook);
-      this.closeReviewModal();
-      // Aici ai trimite recenzia la backend
-      console.log('New review:', newReview);
   },
 
   markReviewHelpful(reviewId) {
