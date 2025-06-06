@@ -28,6 +28,7 @@ const App = {
       this.loadSettings();
       this.setupEventListeners();
       this.loadReaderPreferences();
+      this.loadReviews();
   },
 
   async checkSession() {
@@ -1658,6 +1659,59 @@ const App = {
       
       // Redirecționăm către endpoint-ul de descărcare PDF
       window.location.href = `server/download_pdf.php?book_id=${this.currentBook.id}`;
+  },
+
+  async loadReviews() {
+      try {
+          const response = await fetch('server/get_reviews.php');
+          const data = await response.json();
+          
+          if (data.success) {
+              const reviewsList = document.getElementById('reviewsList');
+              if (reviewsList) {
+                  reviewsList.innerHTML = data.reviews.map(review => `
+                      <div class="review-item">
+                          <div class="review-header">
+                              <div class="reviewer-info">
+                                  <span class="reviewer-name">${review.name}</span>
+                                  <div class="review-rating">
+                                      ${this.generateStars(review.rating)}
+                                  </div>
+                              </div>
+                              <div class="review-date">${new Date(review.created_at).toLocaleDateString()}</div>
+                          </div>
+                          <div class="review-content">${review.comment}</div>
+                          <div class="review-actions">
+                              <button onclick="App.markReviewHelpful(${review.id})" class="helpful-btn">
+                                  <span class="icon">👍</span>
+                                  <span class="count">${review.helpful_count || 0}</span>
+                              </button>
+                          </div>
+                      </div>
+                  `).join('');
+              }
+          }
+      } catch (error) {
+          console.error('Error loading reviews:', error);
+      }
+  },
+
+  generateStars(rating) {
+      const fullStars = Math.floor(rating);
+      const hasHalfStar = rating % 1 >= 0.5;
+      let stars = '';
+      
+      for (let i = 0; i < 5; i++) {
+          if (i < fullStars) {
+              stars += '<span class="star filled">★</span>';
+          } else if (i === fullStars && hasHalfStar) {
+              stars += '<span class="star half">★</span>';
+          } else {
+              stars += '<span class="star">☆</span>';
+          }
+      }
+      
+      return stars;
   },
 };
 // Initialize the app after DOM is loaded
