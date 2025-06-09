@@ -50,6 +50,7 @@ const App = {
           const response = await fetch('server/books.php');
           const result = await response.json();
           if (result.success) {
+              console.log('Books from server:', result.books);
               this.books = result.books;
               this.renderBooks();
           } else {
@@ -58,6 +59,7 @@ const App = {
               alert('Eroare la încărcarea cărților din baza de date!');
           }
       } catch (e) {
+          console.error('Error loading books:', e);
           this.books = [];
           this.renderBooks();
           alert('Eroare la conectare cu serverul!');
@@ -145,9 +147,9 @@ const App = {
                   <div class="book-meta">
                       <div class="rating">
                           <span class="star">★</span>
-                          <span>${book.rating}</span>
+                          <span>${book.rating || '0.0'}</span>
                       </div>
-                      <span>${book.genre}</span>
+                      <span>${book.genres || 'Fără gen'}</span>
                   </div>
               </div>
           </div>
@@ -157,7 +159,7 @@ const App = {
   getFilteredBooks() {
       return this.books.filter(book => {
           const matchesStatus = !this.currentFilters.status || book.status === this.currentFilters.status;
-          const matchesGenre = !this.currentFilters.genre || book.genre === this.currentFilters.genre;
+          const matchesGenre = !this.currentFilters.genre || book.genres === this.currentFilters.genre;
           const matchesSearch = !this.currentFilters.search || 
               book.title.toLowerCase().includes(this.currentFilters.search.toLowerCase()) ||
               book.author.toLowerCase().includes(this.currentFilters.search.toLowerCase());
@@ -259,9 +261,9 @@ const App = {
                   <div class="book-meta">
                       <div class="rating">
                           <span class="star">★</span>
-                          <span>${book.rating}</span>
+                          <span>${book.rating || '0.0'}</span>
                       </div>
-                      <span>${book.genre}</span>
+                      <span>${book.genres || 'Fără gen'}</span>
                   </div>
               </div>
           </div>
@@ -662,7 +664,7 @@ const App = {
   renderRecommendations(book) {
       const similarBooks = this.books.filter(b =>
           b.id !== book.id &&
-          b.genres?.some(genre => (book.genres || []).includes(genre))
+          b.genres === book.genres
       ).slice(0, 6);
       const container = document.getElementById('recommendationsGrid');
       this.renderBooksInContainer(similarBooks, container);
