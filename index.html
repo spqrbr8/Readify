@@ -206,18 +206,27 @@
                 <!-- Recenzii -->
                 <div class="reviews-section">
                     <div class="reviews-header">
-                        <h3>Recenzii utilizatori</h3>
+                        <div class="reviews-title">
+                            <h3>Recenzii utilizatori</h3>
+                            <div class="rating-summary">
+                                <div class="average-rating">
+                                    <span id="averageRating">0.0</span>
+                                    <div class="stars" id="averageStars"></div>
+                                </div>
+                                <div class="rating-count" id="totalReviews">0 recenzii</div>
+                            </div>
+                        </div>
                         <button class="write-review-btn" onclick="App.showReviewForm()">
-                            Scrie o recenzie
+                            <span class="icon">✍️</span> Scrie o recenzie
                         </button>
                     </div>
                     
                     <div class="reviews-list" id="reviewsList">
-                        <!-- Recenziile vor fi populate dinamic cu JavaScript -->
+                        <!-- Отзывы будут добавлены через JavaScript -->
                     </div>
                     
                     <div class="reviews-pagination" id="reviewsPagination">
-                        <!-- Paginarea va fi populată din JS -->
+                        <!-- Пагинация будет добавлена через JavaScript -->
                     </div>
                 </div>
 
@@ -248,8 +257,14 @@
                         </div>
                     </div>
                     <div class="form-group">
+                        <label class="form-label">Titlu</label>
+                        <input type="text" class="form-input" name="reviewTitle" required 
+                               placeholder="Adaugă un titlu pentru recenzia ta">
+                    </div>
+                    <div class="form-group">
                         <label class="form-label">Recenzia ta</label>
-                        <textarea class="form-input" name="reviewText" rows="6" placeholder="Scrie-ți părerea despre această carte..."></textarea>
+                        <textarea class="form-input" name="reviewContent" rows="6" required
+                                  placeholder="Scrie-ți părerea despre această carte..."></textarea>
                     </div>
                     <button type="submit" class="form-btn">Publică recenzia</button>
                 </form>

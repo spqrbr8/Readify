@@ -28,7 +28,8 @@ const App = {
       this.loadSettings();
       this.setupEventListeners();
       this.loadReaderPreferences();
-      this.loadReviews();
+      // Eliminăm apelul vechi fără bookId
+      // this.loadReviews();
   },
 
   async checkSession() {
@@ -415,36 +416,41 @@ const App = {
   },
 
   async renderBookDetails(book) {
-      // Загружаем актуальные данные книги с сервера
-      try {
-          const response = await fetch(`server/getBook.php?id=${book.id}`);
-          const data = await response.json();
-          if (data.success) {
-              book = data.book; // Обновляем объект книги актуальными данными
-          }
-      } catch (error) {
-          console.error('Eroare la încărcarea detaliilor cărții:', error);
-      }
-
-      // Обновляем основные детали книги
+      this.currentBook = book;
+      
+      // Обновляем заголовок и автора
       document.getElementById('bookTitleLarge').textContent = book.title;
-      document.getElementById('bookAuthorLink').textContent = book.author;
-      document.getElementById('bookDescription').textContent = book.description;
-      
-      // Обновляем мета-информацию
-      document.getElementById('bookStatus').textContent = this.getStatusText(book.status);
-      document.getElementById('bookChapters').textContent = book.chapters;
-      document.getElementById('bookPublishDate').textContent = book.published_date;
-      document.getElementById('bookPublisher').textContent = book.publisher;
-      
-      // Обновляем рейтинг
-      this.renderRating(book);
+      const authorLink = document.getElementById('bookAuthorLink');
+      authorLink.textContent = book.author;
+      authorLink.onclick = (e) => {
+          e.preventDefault();
+          this.showAuthorBooks(book.author);
+      };
       
       // Обновляем жанры
       const genresContainer = document.getElementById('bookGenres');
-      genresContainer.innerHTML = book.genres.map(genre => 
-          `<span class="genre-tag">${genre}</span>`
-      ).join('');
+      genresContainer.innerHTML = '';
+      
+      // Проверяем, является ли genres строкой или массивом
+      const genres = typeof book.genres === 'string' ? book.genres.split(',') : (Array.isArray(book.genres) ? book.genres : []);
+      
+      genres.forEach(genre => {
+          const genreTag = document.createElement('span');
+          genreTag.className = 'genre-tag';
+          genreTag.textContent = genre.trim();
+          genreTag.onclick = () => this.filterByGenre(genre.trim());
+          genresContainer.appendChild(genreTag);
+      });
+      
+      // Обновляем остальные детали
+      document.getElementById('bookStatus').textContent = this.getStatusText(book.status);
+      document.getElementById('bookChapters').textContent = `${book.chapters} capitole`;
+      document.getElementById('bookPublishDate').textContent = new Date(book.publish_date).toLocaleDateString('ro-RO');
+      document.getElementById('bookPublisher').textContent = book.publisher;
+      document.getElementById('bookDescription').textContent = book.description;
+      
+      // Обновляем рейтинг
+      this.renderRating(book);
       
       // Обновляем прогресс чтения
       this.renderReadingProgress(book);
@@ -452,11 +458,17 @@ const App = {
       // Обновляем список глав
       this.renderChaptersList(book);
       
-      // Обновляем отзывы
-      this.renderReviews(book);
+      // Загружаем отзывы
+      await this.renderReviews(book.id);
       
-      // Обновляем рекомендации
+      // Загружаем рекомендации
       this.renderRecommendations(book);
+      
+      // Обновляем кнопку избранного
+      this.updateFavoriteButton(book.id);
+      
+      // Показываем страницу деталей
+      this.navigateTo('bookDetails');
   },
 
   renderRating(book) {
@@ -465,7 +477,12 @@ const App = {
       starsContainer.innerHTML = '★'.repeat(rating) + '☆'.repeat(5 - rating);
 
       document.getElementById('ratingValue').textContent = book.rating.toFixed(1);
-      document.getElementById('ratingCount').textContent = `(${book.reviews?.length || 0} evaluări)`;
+      
+      // Получаем общее количество отзывов из статистики рейтингов
+      const totalReviews = book.rating_stats ? 
+          book.rating_stats.reduce((sum, stat) => sum + parseInt(stat.count), 0) : 0;
+      
+      document.getElementById('ratingCount').textContent = `(${totalReviews} evaluări)`;
 
       this.renderRatingBreakdown(book);
   },
@@ -518,49 +535,128 @@ const App = {
       `).join('');
   },
 
-  renderReviews(book) {
-      const reviewsContainer = document.getElementById('reviewsList');
-      if (!reviewsContainer) return;
-
-      // Очищаем контейнер
-      reviewsContainer.innerHTML = '';
-
-      // Загружаем отзывы с сервера
-      fetch(`server/getReviews.php?bookId=${book.id}`)
-          .then(res => res.json())
-          .then(data => {
-              if (!data.success) {
-                  console.error('Eroare la încărcarea recenziilor:', data.message);
-                  return;
+  async renderReviews(bookId, page = 1) {
+      try {
+          const response = await fetch(`server/getReviews.php?bookId=${bookId}&page=${page}`);
+          const data = await response.json();
+          
+          if (data.success) {
+              // Обновляем статистику рейтингов в текущей книге
+              if (this.currentBook) {
+                  this.currentBook.rating_stats = data.rating_stats;
+                  this.renderRating(this.currentBook);
               }
-
-              const reviews = data.reviews;
-              if (!reviews || reviews.length === 0) {
-                  reviewsContainer.innerHTML = '<p class="no-reviews">Nu există recenzii pentru această carte.</p>';
-                  return;
+              
+              const reviewsContainer = document.getElementById('reviewsList');
+              const paginationContainer = document.getElementById('reviewsPagination');
+              const totalReviewsElement = document.getElementById('totalReviews');
+              const averageRatingElement = document.getElementById('averageRating');
+              const averageStarsElement = document.getElementById('averageStars');
+              const ratingBreakdown = document.getElementById('ratingBreakdown');
+              
+              // Обновляем общее количество отзывов
+              if (totalReviewsElement) {
+                  totalReviewsElement.textContent = `${data.pagination.total} recenzii`;
               }
-
-              // Отображаем каждый отзыв
-              reviews.forEach(review => {
-                  const reviewElement = document.createElement('div');
-                  reviewElement.className = 'review';
-                  reviewElement.innerHTML = `
-                      <div class="review-header">
-                          <div class="review-author">${review.author}</div>
-                          <div class="review-rating">
-                              ${'★'.repeat(review.rating)}${'☆'.repeat(5 - review.rating)}
-                          </div>
-                          <div class="review-date">${new Date(review.created_at).toLocaleDateString('ro-RO')}</div>
-                      </div>
-                      <div class="review-content">${review.comment}</div>
-                  `;
-                  reviewsContainer.appendChild(reviewElement);
+              
+              // Рассчитываем средний рейтинг
+              let sumRatings = 0;
+              let numRatings = 0;
+              data.rating_stats.forEach(stat => {
+                  sumRatings += parseInt(stat.rating) * parseInt(stat.count);
+                  numRatings += parseInt(stat.count);
               });
-          })
-          .catch(err => {
-              console.error('Eroare la încărcarea recenziilor:', err);
-              reviewsContainer.innerHTML = '<p class="error-message">A apărut o eroare la încărcarea recenziilor.</p>';
-          });
+              const averageRating = numRatings > 0 ? (sumRatings / numRatings).toFixed(1) : '0.0';
+              
+              // Обновляем средний рейтинг
+              if (averageRatingElement) {
+                  averageRatingElement.textContent = averageRating;
+              }
+              if (averageStarsElement) {
+                  averageStarsElement.innerHTML = this.generateStars(parseFloat(averageRating));
+              }
+              
+              // Обновляем разбивку рейтингов
+              if (ratingBreakdown) {
+                  let breakdownHTML = '';
+                  for (let i = 5; i >= 1; i--) {
+                      const stat = data.rating_stats.find(s => parseInt(s.rating) === i);
+                      const count = stat ? parseInt(stat.count) : 0;
+                      const percentage = numRatings > 0 ? (count / numRatings) * 100 : 0;
+                      
+                      breakdownHTML += `
+                          <div class="rating-bar">
+                              <span>${i} ★</span>
+                              <div class="rating-bar-fill">
+                                  <div class="rating-bar-progress" style="width: ${percentage}%"></div>
+                              </div>
+                              <span>${count}</span>
+                          </div>
+                      `;
+                  }
+                  ratingBreakdown.innerHTML = breakdownHTML;
+              }
+              
+              // Обновляем список отзывов
+              if (data.reviews.length === 0) {
+                  reviewsContainer.innerHTML = '<p class="no-reviews">Nicio recenzie încă. Fii primul!</p>';
+              } else {
+                  reviewsContainer.innerHTML = data.reviews.map(review => `
+                      <div class="review-item">
+                          <div class="review-header">
+                              <div class="reviewer-info">
+                                  <div class="reviewer-avatar">
+                                      ${review.author_name ? review.author_name.charAt(0).toUpperCase() : '?'}
+                                  </div>
+                                  <div class="reviewer-details">
+                                      <div class="reviewer-name">${review.author_name || 'Anonim'}</div>
+                                      <div class="review-date">${new Date(review.created_at).toLocaleDateString('ro-RO')}</div>
+                                  </div>
+                              </div>
+                              <div class="review-rating">${'★'.repeat(review.rating)}${'☆'.repeat(5 - review.rating)}</div>
+                          </div>
+                          <div class="review-title">${review.title}</div>
+                          <div class="review-content">${review.content}</div>
+                      </div>
+                  `).join('');
+              }
+              
+              // Обновляем пагинацию
+              const totalPages = Math.ceil(data.pagination.total / data.pagination.limit);
+              let paginationHTML = '';
+              
+              if (totalPages > 1) {
+                  paginationHTML += `
+                      <button class="pagination-btn" 
+                              onclick="App.loadReviews(${bookId}, ${page - 1})"
+                              ${page === 1 ? 'disabled' : ''}>
+                          <i class="fas fa-chevron-left"></i>
+                      </button>
+                  `;
+                  
+                  for (let i = 1; i <= totalPages; i++) {
+                      paginationHTML += `
+                          <button class="pagination-btn ${i === page ? 'active' : ''}"
+                                  onclick="App.loadReviews(${bookId}, ${i})">
+                              ${i}
+                          </button>
+                      `;
+                  }
+                  
+                  paginationHTML += `
+                      <button class="pagination-btn"
+                              onclick="App.loadReviews(${bookId}, ${page + 1})"
+                              ${page === totalPages ? 'disabled' : ''}>
+                          <i class="fas fa-chevron-right"></i>
+                      </button>
+                  `;
+              }
+              
+              paginationContainer.innerHTML = paginationHTML;
+          }
+      } catch (error) {
+          console.error('Error loading reviews:', error);
+      }
   },
 
   renderRecommendations(book) {
@@ -862,32 +958,74 @@ const App = {
           this.showLogin();
           return;
       }
-      document.getElementById('reviewModal').classList.add('show');
-      this.setupRatingInput();
+      
+      if (!this.currentBook) {
+          alert('Eroare: Carte invalidă');
+          return;
+      }
+      
+      const modal = document.getElementById('reviewModal');
+      modal.classList.add('show');
+      
+      // Сбрасываем форму
+      const form = modal.querySelector('form');
+      form.reset();
+      
+      // Сбрасываем звезды
+      const stars = modal.querySelectorAll('.star-input');
+      stars.forEach(star => {
+          star.classList.remove('active');
+          star.classList.remove('hover');
+      });
+      
+      // Удаляем старые обработчики событий
+      stars.forEach(star => {
+          const newStar = star.cloneNode(true);
+          star.parentNode.replaceChild(newStar, star);
+      });
+      
+      // Инициализируем звезды
+      this.setupRatingInput(modal);
   },
 
   closeReviewModal() {
       document.getElementById('reviewModal').classList.remove('show');
   },
 
-  setupRatingInput() {
-      const stars = document.querySelectorAll('.star-input');
-      let selectedRating = 0;
-      stars.forEach((star, index) => {
-          star.onclick = () => {
-              selectedRating = index + 1;
-              this.selectedReviewRating = selectedRating;
-              this.updateStarDisplay(stars, selectedRating);
-          };
-          star.onmouseover = () => {
-              this.updateStarDisplay(stars, index + 1);
-          };
+  setupRatingInput(modal) {
+      const stars = modal.querySelectorAll('.star-input');
+      
+      stars.forEach(star => {
+          // Обработчик клика
+          star.addEventListener('click', () => {
+              const rating = star.dataset.rating;
+              
+              stars.forEach(s => {
+                  if (s.dataset.rating <= rating) {
+                      s.classList.add('active');
+                  } else {
+                      s.classList.remove('active');
+                  }
+              });
+          });
+          
+          // Обработчик наведения
+          star.addEventListener('mouseover', () => {
+              const rating = star.dataset.rating;
+              stars.forEach(s => {
+                  if (s.dataset.rating <= rating) {
+                      s.classList.add('hover');
+                  } else {
+                      s.classList.remove('hover');
+                  }
+              });
+          });
+          
+          // Обработчик ухода мыши
+          star.addEventListener('mouseout', () => {
+              stars.forEach(s => s.classList.remove('hover'));
+          });
       });
-      document.getElementById('ratingInput').onmouseleave = () => {
-          this.updateStarDisplay(stars, this.selectedReviewRating || 0);
-      };
-      this.selectedReviewRating = 0;
-      this.updateStarDisplay(stars, 0);
   },
 
   updateStarDisplay(stars, rating) {
@@ -898,49 +1036,75 @@ const App = {
 
   async submitReview(event) {
       event.preventDefault();
-      if (!this.selectedReviewRating) {
-          alert('Te rog să selectezi un rating!');
+      
+      if (!this.currentBook) {
+          console.error('currentBook is not set');
+          alert('Eroare: Carte invalidă');
           return;
       }
-
-      const formData = new FormData(event.target);
-      const reviewText = formData.get('reviewText');
-
+      
+      const modal = document.getElementById('reviewModal');
+      const form = modal.querySelector('form');
+      const stars = modal.querySelectorAll('.star-input');
+      
+      // Находим последнюю активную звезду
+      let selectedRating = 0;
+      for (let i = stars.length - 1; i >= 0; i--) {
+          if (stars[i].classList.contains('active')) {
+              selectedRating = parseInt(stars[i].dataset.rating);
+              break;
+          }
+      }
+      
+      const title = modal.querySelector('[name="reviewTitle"]').value;
+      const content = modal.querySelector('[name="reviewContent"]').value;
+      
+      if (selectedRating === 0 || !title || !content) {
+          console.error('Missing required fields:', { rating: selectedRating, title, content });
+          alert('Vă rugăm să selectați un rating și să completați toate câmpurile.');
+          return;
+      }
+      
       try {
+          const requestData = {
+              bookId: this.currentBook.id,
+              rating: selectedRating,
+              title: title,
+              content: content
+          };
+          
+          console.log('Sending review data:', requestData); // Для отладки
+          
           const response = await fetch('server/addReview.php', {
               method: 'POST',
               headers: {
-                  'Content-Type': 'application/json',
+                  'Content-Type': 'application/json'
               },
-              body: JSON.stringify({
-                  bookId: this.currentBook.id,
-                  author: this.currentUser.name,
-                  rating: this.selectedReviewRating,
-                  comment: reviewText
-              })
+              body: JSON.stringify(requestData)
           });
-
-          const result = await response.json();
           
-          if (result.success) {
-              // Очищаем форму
-              event.target.reset();
-              this.selectedReviewRating = 0;
-              this.updateStarDisplay(document.querySelectorAll('.star-input'), 0);
-              
-              // Закрываем модальное окно
+          const data = await response.json();
+          
+          if (data.success) {
               this.closeReviewModal();
               
-              // Обновляем отзывы
-              await this.renderReviews(this.currentBook);
+              // Обновляем информацию о книге
+              const bookResponse = await fetch(`server/getBook.php?id=${this.currentBook.id}`);
+              const bookData = await bookResponse.json();
               
-              alert('Recenzia a fost adăugată cu succes!');
+              if (bookData.success) {
+                  this.currentBook = bookData.book;
+                  this.renderRating(this.currentBook);
+                  await this.loadReviews(this.currentBook.id);
+              }
+              
+              alert('Recenzie adăugată cu succes!');
           } else {
-              alert('Eroare la adăugarea recenziei: ' + result.message);
+              alert(data.message || 'Eroare la adăugarea recenziei');
           }
       } catch (error) {
-          console.error('Eroare la trimiterea recenziei:', error);
-          alert('A apărut o eroare la trimiterea recenziei. Te rog să încerci din nou.');
+          console.error('Error submitting review:', error);
+          alert('Eroare la adăugarea recenziei');
       }
   },
 
@@ -1661,41 +1825,6 @@ const App = {
       window.location.href = `server/download_pdf.php?book_id=${this.currentBook.id}`;
   },
 
-  async loadReviews() {
-      try {
-          const response = await fetch('server/get_reviews.php');
-          const data = await response.json();
-          
-          if (data.success) {
-              const reviewsList = document.getElementById('reviewsList');
-              if (reviewsList) {
-                  reviewsList.innerHTML = data.reviews.map(review => `
-                      <div class="review-item">
-                          <div class="review-header">
-                              <div class="reviewer-info">
-                                  <span class="reviewer-name">${review.name}</span>
-                                  <div class="review-rating">
-                                      ${this.generateStars(review.rating)}
-                                  </div>
-                              </div>
-                              <div class="review-date">${new Date(review.created_at).toLocaleDateString()}</div>
-                          </div>
-                          <div class="review-content">${review.comment}</div>
-                          <div class="review-actions">
-                              <button onclick="App.markReviewHelpful(${review.id})" class="helpful-btn">
-                                  <span class="icon">👍</span>
-                                  <span class="count">${review.helpful_count || 0}</span>
-                              </button>
-                          </div>
-                      </div>
-                  `).join('');
-              }
-          }
-      } catch (error) {
-          console.error('Error loading reviews:', error);
-      }
-  },
-
   generateStars(rating) {
       const fullStars = Math.floor(rating);
       const hasHalfStar = rating % 1 >= 0.5;
@@ -1712,6 +1841,41 @@ const App = {
       }
       
       return stars;
+  },
+
+  // Функция для лайка отзыва
+  async toggleLike(reviewId) {
+      try {
+          const response = await fetch('server/likeReview.php', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ reviewId })
+          });
+          
+          const data = await response.json();
+          
+          if (data.success) {
+              const likeBtn = document.querySelector(`.review-item[data-review-id="${reviewId}"] .like-btn`);
+              const likesCount = likeBtn.querySelector('span');
+              
+              if (data.action === 'liked') {
+                  likeBtn.classList.add('liked');
+                  likesCount.textContent = parseInt(likesCount.textContent) + 1;
+              } else {
+                  likeBtn.classList.remove('liked');
+                  likesCount.textContent = parseInt(likesCount.textContent) - 1;
+              }
+          }
+      } catch (error) {
+          console.error('Ошибка при обработке лайка:', error);
+      }
+  },
+
+  // Функция для смены страницы отзывов
+  changePage(page) {
+      renderReviews(this.currentBook, page);
   },
 };
 // Initialize the app after DOM is loaded
