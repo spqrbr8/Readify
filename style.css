@@ -1983,3 +1983,115 @@ body.light-theme .book-content {
     gap: 5px;
     margin: 10px 0;
 }
+
+body.light-theme .reviews-section {
+    background: #fff;
+    color: #23272f;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 2px 8px rgba(109,40,217,0.04);
+}
+
+body.light-theme .reviews-header {
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 20px;
+}
+
+body.light-theme .reviews-title h3 {
+    color: #23272f;
+}
+
+body.light-theme .rating-summary {
+    color: #6b7280;
+}
+
+body.light-theme .average-rating span {
+    color: #6d28d9;
+}
+
+body.light-theme .rating-count {
+    color: #6b7280;
+}
+
+body.light-theme .write-review-btn {
+    background: #6d28d9;
+    color: #fff;
+    border: 1px solid #6d28d9;
+}
+
+body.light-theme .write-review-btn:hover {
+    background: #5b21b6;
+    border-color: #5b21b6;
+}
+
+body.light-theme .review-item {
+    background: #f1f5f9;
+    border: 1px solid #e5e7eb;
+    color: #23272f;
+}
+
+body.light-theme .review-header {
+    border-bottom: 1px solid #e5e7eb;
+}
+
+body.light-theme .reviewer-name {
+    color: #23272f;
+}
+
+body.light-theme .review-date {
+    color: #6b7280;
+}
+
+body.light-theme .review-rating {
+    color: #fbbf24;
+}
+
+body.light-theme .review-title {
+    color: #23272f;
+}
+
+body.light-theme .review-content {
+    color: #4b5563;
+}
+
+body.light-theme .like-btn {
+    border-color: #6d28d9;
+    color: #6d28d9;
+}
+
+body.light-theme .like-btn:hover {
+    background: #ede9fe;
+}
+
+body.light-theme .like-btn.liked {
+    background: #6d28d9;
+    color: #fff;
+}
+
+body.light-theme .reviews-pagination {
+    border-top: 1px solid #e5e7eb;
+    padding-top: 20px;
+}
+
+body.light-theme .pagination-btn {
+    background: #f1f5f9;
+    color: #23272f;
+    border: 1px solid #e5e7eb;
+}
+
+body.light-theme .pagination-btn:hover {
+    background: #ede9fe;
+    border-color: #6d28d9;
+    color: #6d28d9;
+}
+
+body.light-theme .pagination-btn.active {
+    background: #6d28d9;
+    color: #fff;
+    border-color: #6d28d9;
+}
+
+body.light-theme .pagination-btn:disabled {
+    background: #f1f5f9;
+    color: #9ca3af;
+    border-color: #e5e7eb;
+}
