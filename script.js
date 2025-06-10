@@ -1556,6 +1556,10 @@ const App = {
               <input name="publish_date" type="date" class="form-input" placeholder="Data publicării" style="margin-bottom:10px;" />
               <input name="publisher" class="form-input" placeholder="Editura" style="margin-bottom:10px;" />
               <textarea name="description" class="form-input" placeholder="Descriere" style="margin-bottom:10px;"></textarea>
+              <div style="margin-bottom:10px;">
+                  <label style="color:#fff;display:block;margin-bottom:5px;">Importă text din PDF:</label>
+                  <input type="file" name="pdfFile" accept=".pdf" class="form-input" style="margin-bottom:5px;" onchange="App.handlePdfUpload(event)" />
+              </div>
               <textarea name="content" class="form-input" placeholder="Conținutul cărții" style="margin-bottom:10px;min-height:200px;"></textarea>
               <button type="submit" class="form-btn">Adaugă</button>
               <button type="button" class="form-btn" style="background:#444;margin-top:10px;" onclick="App.hideAddBookForm()">Anulează</button>
@@ -1590,6 +1594,33 @@ const App = {
           }
       } catch (e) {
           alert('Eroare la conectare cu serverul!');
+      }
+  },
+
+  async handlePdfUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append('pdf', file);
+
+      try {
+          const response = await fetch('server/parse_pdf.php', {
+              method: 'POST',
+              body: formData
+          });
+          
+          const result = await response.json();
+          if (result.success) {
+              document.querySelector('textarea[name="content"]').value = result.text;
+              // Set the chapter count
+              document.querySelector('input[name="chapters"]').value = result.chapters;
+          } else {
+              alert('Eroare la parsarea PDF-ului: ' + (result.error || 'Eroare necunoscută'));
+          }
+      } catch (error) {
+          console.error('Eroare:', error);
+          alert('Eroare la încărcarea PDF-ului');
       }
   },
 

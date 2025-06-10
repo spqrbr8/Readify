@@ -2095,3 +2095,9 @@ body.light-theme .pagination-btn:disabled {
     color: #9ca3af;
     border-color: #e5e7eb;
 }
+
+.recommendations-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 20px;
+}
