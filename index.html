@@ -15,7 +15,6 @@
                 <a href="#" class="nav-link active" data-page="home" onclick="App.showHome()">Acasă</a>
                 <a href="#" class="nav-link" data-page="catalog" onclick="App.showCatalog()">Catalog</a>
                 <a href="#" class="nav-link" data-page="top" onclick="App.showTop()">Top</a>
-                <a href="#" class="nav-link" data-page="bookmarks" onclick="App.showBookmarks()">Marcaje</a>
                 <a href="#" class="nav-link" data-page="history" onclick="App.showHistory()">Istoric</a>
             </nav>
             <div class="search-container">
@@ -87,16 +86,6 @@
             </div>
         </div>
 
-        <div id="bookmarksPage" class="page-view">
-            <h2 class="section-title">
-                <div class="section-icon"></div>
-                Marcajele mele
-            </h2>
-            <div class="book-grid" id="bookmarksGrid">
-                <!-- Bookmarks content -->
-            </div>
-        </div>
-
         <div id="historyPage" class="page-view">
             <h2 class="section-title">
                 <div class="section-icon"></div>
@@ -113,12 +102,6 @@
                 <div class="book-details-header">
                     <button class="back-btn" onclick="App.goBack()">← Înapoi</button>
                     <div class="book-actions">
-                        <button class="action-btn favorite" onclick="App.toggleFavorite()">
-                            <span class="icon">♡</span> Favorite
-                        </button>
-                        <button class="action-btn collection" onclick="App.showCollections()">
-                            <span class="icon">📚</span> Colecții
-                        </button>
                         <button class="action-btn download" onclick="App.downloadPDF()">
                             <span class="icon">📥</span> Descarcă PDF
                         </button>

@@ -7,7 +7,6 @@ const App = {
       genre: '',
       search: ''
   },
-  bookmarks: new Set(),
   history: [],
   settings: {
       theme: 'dark',
@@ -28,8 +27,6 @@ const App = {
       this.loadSettings();
       this.setupEventListeners();
       this.loadReaderPreferences();
-      // Eliminăm apelul vechi fără bookId
-      // this.loadReviews();
   },
 
   async checkSession() {
@@ -69,11 +66,9 @@ const App = {
   loadUserData() {
       // In future, this will be loaded from backend
       const userData = {
-          bookmarks: [],
           history: []
       };
       
-      this.bookmarks = new Set(userData.bookmarks);
       this.history = userData.history;
   },
 
@@ -185,25 +180,13 @@ const App = {
 
   showCatalog() {
       this.navigateTo('catalog');
-      const catalogGrid = document.getElementById('catalogGrid');
-      catalogGrid.innerHTML = '';
-      this.renderBooksInContainer(this.books, catalogGrid);
+      this.renderBooksInContainer(this.books, document.getElementById('catalogGrid'));
   },
 
   showTop() {
       this.navigateTo('top');
-      const topBooks = [...this.books].sort((a, b) => b.rating - a.rating);
-      const topGrid = document.getElementById('topGrid');
-      topGrid.innerHTML = '';
-      this.renderBooksInContainer(topBooks, topGrid);
-  },
-
-  showBookmarks() {
-      this.navigateTo('bookmarks');
-      const bookmarkedBooks = this.books.filter(book => this.bookmarks.has(book.id));
-      const bookmarksGrid = document.getElementById('bookmarksGrid');
-      bookmarksGrid.innerHTML = '';
-      this.renderBooksInContainer(bookmarkedBooks, bookmarksGrid);
+      const topBooks = [...this.books].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+      this.renderBooksInContainer(topBooks, document.getElementById('topGrid'));
   },
 
   showHistory() {
@@ -466,9 +449,6 @@ const App = {
       // Загружаем рекомендации
       this.renderRecommendations(book);
       
-      // Обновляем кнопку избранного
-      this.updateFavoriteButton(book.id);
-      
       // Показываем страницу деталей
       this.navigateTo('bookDetails');
   },
@@ -670,33 +650,6 @@ const App = {
       this.renderBooksInContainer(similarBooks, container);
   },
 
-  toggleFavorite() {
-      if (!this.currentUser) {
-          this.showLogin();
-          return;
-      }
-      const bookId = this.currentBook.id;
-      if (this.bookmarks.has(bookId)) {
-          this.bookmarks.delete(bookId);
-      } else {
-          this.bookmarks.add(bookId);
-      }
-      this.updateFavoriteButton(bookId);
-      // Aici ai trimite request la backend
-  },
-
-  updateFavoriteButton(bookId) {
-      const btn = document.querySelector('.action-btn.favorite');
-      if (!btn) return;
-      if (this.bookmarks.has(bookId)) {
-          btn.classList.add('active');
-          btn.innerHTML = '<span class="icon">♥</span> În favorite';
-      } else {
-          btn.classList.remove('active');
-          btn.innerHTML = '<span class="icon">♡</span> Favorite';
-      }
-  },
-
   startReading() {
       if (!this.currentUser) {
           this.showLogin();
@@ -807,25 +760,28 @@ const App = {
           const timePerChapter = this.currentBook.userProgress.readingTime / this.currentBook.chapters;
           this.currentBook.userProgress.readingTime = Math.round(timePerChapter * chapterNumber);
           
-          // In a real app, this would be an API call
-          // await fetch(`/api/books/${this.currentBook.id}/progress`, {
-          //     method: 'POST',
-          //     headers: {
-          //         'Content-Type': 'application/json'
-          //     },
-          //     body: JSON.stringify({
-          //         chapter: chapterNumber,
-          //         readingTime: this.currentBook.userProgress.readingTime,
-          //         lastReadPosition: this.currentBook.userProgress.lastReadPosition
-          //     })
-          // });
-          
-          console.log('Saving progress:', {
-              bookId: this.currentBook.id,
-              chapter: chapterNumber,
-              readingTime: this.currentBook.userProgress.readingTime,
-              lastReadPosition: this.currentBook.userProgress.lastReadPosition
+          // Save progress to server
+          const response = await fetch('server/saveProgress.php', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                  userId: this.currentUser.id,
+                  bookId: this.currentBook.id,
+                  chapter: chapterNumber,
+                  readingTime: this.currentBook.userProgress.readingTime,
+                  lastReadPosition: this.currentBook.userProgress.lastReadPosition
+              })
           });
+
+          const result = await response.json();
+          
+          if (!result.success) {
+              throw new Error(result.message || 'Error saving progress');
+          }
+          
+          console.log('Progress saved successfully');
           
       } catch (error) {
           console.error('Error saving progress:', error);
@@ -941,6 +897,7 @@ const App = {
       
       // Navigate to reader page
       this.navigateTo('reader');
+      
       
       // Set current chapter
       this.currentChapter = chapterNum;
@@ -1162,14 +1119,6 @@ const App = {
   },
 
   // Placeholder methods
-  showProfile() {
-      console.log('Show profile');
-  },
-
-  showCollections() {
-      alert('Funcționalitatea de colecții nu este încă implementată.');
-  },
-
   showSettings() {
       this.navigateTo('settings');
       // Arată secțiunea de cont doar dacă utilizatorul este logat
@@ -1350,94 +1299,109 @@ const App = {
   },
 
   // === PROFIL UTILIZATOR ===
-  showProfile() {
+  async showProfile() {
       this.navigateTo('profile');
+      
       // Avatar și nume/email
       document.getElementById('profileAvatar').textContent = this.currentUser?.name?.charAt(0).toUpperCase() || '?';
       document.getElementById('profileName').textContent = this.currentUser?.name || 'Utilizator';
       document.getElementById('profileEmail').textContent = this.currentUser?.email || '';
 
-      // Statistici personale
-      const booksRead = this.books.filter(b => b.userProgress?.currentChapter === b.chapters).length;
-      const chaptersRead = this.books.reduce((acc, b) => acc + (b.userProgress?.currentChapter || 0), 0);
-      const totalReadingTime = this.books.reduce((acc, b) => acc + Math.floor(((b.userProgress?.currentChapter || 0) / (b.chapters || 1)) * (b.userProgress?.readingTime || 0)), 0);
-      const reviewsWritten = this.books.reduce((acc, b) => acc + (b.reviews?.filter(r => r.user === this.currentUser?.name).length || 0), 0);
-
-      document.getElementById('profileBooksRead').textContent = booksRead;
-      document.getElementById('profileChaptersRead').textContent = chaptersRead;
-      document.getElementById('profileReadingTime').textContent = `${Math.floor(totalReadingTime/60)}h`;
-      document.getElementById('profileReviews').textContent = reviewsWritten;
-
-      // Progres de lectură (primele 3 cărți începute dar nu terminate)
-      const inProgress = this.books.filter(b => b.userProgress?.currentChapter > 0 && b.userProgress?.currentChapter < b.chapters)
-          .slice(0, 3);
-      const progressBars = inProgress.map(b => {
-          const percent = Math.round((b.userProgress.currentChapter / b.chapters) * 100);
-          return `
-              <div>
-                  <div style="font-weight: 500;">${b.title}</div>
-                  <div class="progress-bar" style="margin-bottom: 0;">
-                      <div class="progress-fill" style="width: ${percent}%;"></div>
-                  </div>
-                  <div class="progress-info">
-                      <span>Capitol ${b.userProgress.currentChapter} din ${b.chapters}</span>
-                      <span>${percent}%</span>
-                  </div>
-              </div>
-          `;
-      }).join('') || '<div>Nu ai progres de lectură activ.</div>';
-      document.getElementById('profileProgressBars').innerHTML = progressBars;
-
-      // Obiective de lectură (exemplu: 5 cărți pe lună)
-      const month = new Date().getMonth();
-      const booksThisMonth = this.history.filter(h => (new Date(h.timestamp)).getMonth() === month)
-          .map(h => h.bookId);
-      const uniqueBooksThisMonth = [...new Set(booksThisMonth)].length;
-      const goal = 5;
-      document.getElementById('profileGoals').innerHTML = `
-          <div style="margin-bottom: 10px;">Obiectiv: <b>${goal}</b> cărți citite luna aceasta</div>
-          <div class="progress-bar" style="margin-bottom: 0;">
-              <div class="progress-fill" style="width: ${Math.min(100, uniqueBooksThisMonth/goal*100)}%;"></div>
-          </div>
-          <div class="progress-info">
-              <span>${uniqueBooksThisMonth} / ${goal} cărți</span>
-              <span>${uniqueBooksThisMonth >= goal ? '✔️' : ''}</span>
-          </div>
-      `;
-
-      // Cele mai citite genuri
-      const genreCount = {};
-      this.books.forEach(b => {
-          if (b.userProgress?.currentChapter > 0) {
-              (b.genres || []).forEach(g => {
-                  genreCount[g] = (genreCount[g] || 0) + 1;
-              });
+      try {
+          // Fetch user statistics from server
+          const response = await fetch(`server/getUserStats.php?userId=${this.currentUser.id}`);
+          const data = await response.json();
+          
+          if (!data.success) {
+              throw new Error(data.message || 'Error fetching statistics');
           }
-      });
-      const topGenres = Object.entries(genreCount)
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, 3)
-          .map(([g, c]) => `<span class="tag active">${g} (${c})</span>`)
-          .join('') || '<span class="setting-description">Nu există date suficiente.</span>';
-      document.getElementById('profileTopGenres').innerHTML = topGenres;
 
-      // Ultima carte citită
-      if (this.history.length > 0) {
-          const last = this.history[0];
-          const book = this.books.find(b => b.id === last.bookId);
-          document.getElementById('profileLastRead').innerHTML = book
-              ? `<div style="display: flex; align-items: center; gap: 15px;">
+          const stats = data.stats;
+
+          // Update statistics
+          document.getElementById('profileBooksRead').textContent = stats.booksRead;
+          document.getElementById('profileChaptersRead').textContent = stats.chaptersRead;
+          document.getElementById('profileReadingTime').textContent = `${Math.floor(stats.readingTime/60)}h`;
+          document.getElementById('profileReviews').textContent = stats.reviewsWritten;
+
+          // Update reading progress
+          const progressBars = stats.inProgressBooks.map(b => {
+              const percent = Math.round((b.current_chapter / b.chapters) * 100);
+              return `
+                  <div>
+                      <div style="font-weight: 500;">${b.title}</div>
+                      <div class="progress-bar" style="margin-bottom: 0;">
+                          <div class="progress-fill" style="width: ${percent}%;"></div>
+                      </div>
+                      <div class="progress-info">
+                          <span>Capitol ${b.current_chapter} din ${b.chapters}</span>
+                          <span>${percent}%</span>
+                      </div>
+                  </div>
+              `;
+          }).join('') || '<div>Nu ai progres de lectură activ.</div>';
+          document.getElementById('profileProgressBars').innerHTML = progressBars;
+
+          // Update top genres
+          const topGenres = stats.topGenres.map(g => {
+              const genres = g.genres.split(',');
+              return genres.map(genre => 
+                  `<span class="tag active">${genre.trim()} (${g.count})</span>`
+              ).join('');
+          }).join('') || '<span class="setting-description">Nu există date suficiente.</span>';
+          document.getElementById('profileTopGenres').innerHTML = topGenres;
+
+          // Update last read book
+          if (stats.lastReadBook) {
+              document.getElementById('profileLastRead').innerHTML = `
+                  <div style="display: flex; align-items: center; gap: 15px;">
                       <div style="width: 40px; height: 60px; background: #eee; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 24px;">
-                          ${book.cover ? `<img src="${book.cover}" style="width:100%;height:100%;object-fit:cover;border-radius:4px;">` : '📖'}
+                          ${stats.lastReadBook.cover ? 
+                              `<img src="${stats.lastReadBook.cover}" style="width:100%;height:100%;object-fit:cover;border-radius:4px;">` : 
+                              '📖'}
                       </div>
                       <div>
-                          <div style="font-weight: 500;">${book.title}</div>
-                          <div class="setting-description">de ${book.author}</div>
+                          <div style="font-weight: 500;">${stats.lastReadBook.title}</div>
+                          <div class="setting-description">de ${stats.lastReadBook.author}</div>
                       </div>
-                 </div>`
-              : '<span class="setting-description">Nicio carte citită recent.</span>';
-      } else {
-          document.getElementById('profileLastRead').innerHTML = '<span class="setting-description">Nicio carte citită recent.</span>';
+                  </div>`;
+          } else {
+              document.getElementById('profileLastRead').innerHTML = '<span class="setting-description">Nicio carte citită recent.</span>';
+          }
+
+          // Fetch reading goals from server
+          const goalsResponse = await fetch(`server/getUserGoals.php?userId=${this.currentUser.id}`);
+          const goalsData = await goalsResponse.json();
+          
+          if (!goalsData.success) {
+              throw new Error(goalsData.message || 'Error fetching reading goals');
+          }
+
+          const { monthly_goal, books_read } = goalsData.goal;
+          
+          // Update reading goals
+          document.getElementById('profileGoals').innerHTML = `
+              <div style="margin-bottom: 10px;">Obiectiv: <b>${monthly_goal}</b> cărți citite luna aceasta</div>
+              <div class="progress-bar" style="margin-bottom: 0;">
+                  <div class="progress-fill" style="width: ${Math.min(100, books_read/monthly_goal*100)}%;"></div>
+              </div>
+              <div class="progress-info">
+                  <span>${books_read} / ${monthly_goal} cărți</span>
+                  <span>${books_read >= monthly_goal ? '✔️' : ''}</span>
+              </div>
+          `;
+
+      } catch (error) {
+          console.error('Error loading profile:', error);
+          // Show error state in UI
+          document.getElementById('profileBooksRead').textContent = '-';
+          document.getElementById('profileChaptersRead').textContent = '-';
+          document.getElementById('profileReadingTime').textContent = '-';
+          document.getElementById('profileReviews').textContent = '-';
+          document.getElementById('profileProgressBars').innerHTML = '<div>Eroare la încărcarea datelor.</div>';
+          document.getElementById('profileTopGenres').innerHTML = '<span class="setting-description">Eroare la încărcarea datelor.</span>';
+          document.getElementById('profileLastRead').innerHTML = '<span class="setting-description">Eroare la încărcarea datelor.</span>';
+          document.getElementById('profileGoals').innerHTML = '<span class="setting-description">Eroare la încărcarea datelor.</span>';
       }
   },
 

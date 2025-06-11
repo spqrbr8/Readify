@@ -3,6 +3,12 @@
 error_reporting(0);
 ini_set('display_errors', 0);
 
+// Set PHP configuration for handling large PDF files
+ini_set('upload_max_filesize', '20M');
+ini_set('post_max_size', '20M');
+ini_set('memory_limit', '256M');
+ini_set('max_execution_time', '60');
+
 // Ensure we're sending JSON
 header('Content-Type: application/json');
 
@@ -26,19 +32,30 @@ try {
         throw new Exception('Fișierul temporar nu a fost găsit');
     }
     
-    // Verifică dacă fișierul este un PDF valid
-    if (mime_content_type($file) !== 'application/pdf') {
-        throw new Exception('Fișierul încărcat nu este un PDF valid');
+    // Verifică dacă fișierul este un PDF valid folosind finfo în loc de mime_content_type
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $type = finfo_file($finfo, $file);
+    finfo_close($finfo);
+    
+    if ($type !== 'application/pdf') {
+        throw new Exception('Fișierul încărcat nu este un PDF valid (detected: ' . $type . ')');
     }
 
-    // Inițializează parserul PDF
-    $parser = new \Smalot\PdfParser\Parser();
+    // Inițializează parserul PDF cu configurație personalizată
+    $config = new \Smalot\PdfParser\Config();
+    $config->setIgnoreEncryption(true); // Ignoră flag-ul de criptare dacă PDF-ul nu este de fapt criptat
+    $parser = new \Smalot\PdfParser\Parser([], $config);
     
     // Parsează PDF-ul
     $pdf = $parser->parseFile($file);
     
     // Extrage textul
     $text = $pdf->getText();
+    
+    // Verifică dacă textul este gol (PDF scanat sau protejat)
+    if (empty(trim($text))) {
+        throw new Exception('PDF-ul pare să fie scanat sau protejat. Nu s-a putut extrage textul.');
+    }
     
     // Curăță textul de caractere nedorite și spații multiple
     $text = preg_replace('/\s+/', ' ', $text);

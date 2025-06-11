@@ -199,3 +199,26 @@ VALUES
 (1, 6, 4, 'Bună, dar un pic lungă', 'Deși este o carte bună, mi s-a părut că ar fi putut fi mai concisă.'),
 (2, 1, 3, 'Complexă, dar dificil de urmărit', 'O carte complexă care necesită multă atenție.'),
 (3, 6, 5, 'O capodoperă modernă', 'Una dintre cele mai bune cărți pe care le-am citit vreodată.');
+
+-- Создание таблицы для прогресса чтения
+DROP TABLE IF EXISTS `user_reading_progress`;
+CREATE TABLE IF NOT EXISTS `user_reading_progress` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `user_id` INT NOT NULL,
+  `book_id` INT NOT NULL,
+  `current_chapter` INT NOT NULL DEFAULT 1,
+  `reading_time` INT NOT NULL DEFAULT 0,
+  `last_read_position` INT NOT NULL DEFAULT 0,
+  `last_read_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `is_favorite` BOOLEAN DEFAULT FALSE,
+  FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`book_id`) REFERENCES `books`(`id`) ON DELETE CASCADE,
+  UNIQUE KEY `unique_user_book` (`user_id`, `book_id`)
+);
+
+-- Добавление тестовых данных для прогресса чтения
+INSERT INTO `user_reading_progress` (`user_id`, `book_id`, `current_chapter`, `reading_time`)
+VALUES
+(6, 1, 5, 1800),  -- 30 minute
+(6, 2, 3, 1200),  -- 20 minute
+(6, 3, 8, 3600);  -- 60 minute

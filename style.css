@@ -2101,3 +2101,114 @@ body.light-theme .pagination-btn:disabled {
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     gap: 20px;
 }
+
+/* Admin Edit Book Form - Light Theme */
+body.light-theme #adminEditBookForm {
+    background: #fff !important;
+    border: 1px solid #e0e0e0 !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
+}
+
+body.light-theme #adminEditBookForm .form-group {
+    border-bottom: 1px solid #f0f0f0 !important;
+    padding: 15px !important;
+}
+
+body.light-theme #adminEditBookForm .form-group:last-child {
+    border-bottom: none !important;
+}
+
+body.light-theme #adminEditBookForm label {
+    color: #333 !important;
+    font-weight: 500 !important;
+    display: block !important;
+    margin-bottom: 8px !important;
+}
+
+body.light-theme #adminEditBookForm input[type="text"],
+body.light-theme #adminEditBookForm input[type="number"],
+body.light-theme #adminEditBookForm textarea,
+body.light-theme #adminEditBookForm select {
+    background: #f8f8f8 !important;
+    border: 1px solid #e0e0e0 !important;
+    color: #333 !important;
+    padding: 8px 12px !important;
+    border-radius: 4px !important;
+    width: 100% !important;
+    margin-bottom: 10px !important;
+}
+
+body.light-theme #adminEditBookForm input[type="text"]:focus,
+body.light-theme #adminEditBookForm input[type="number"]:focus,
+body.light-theme #adminEditBookForm textarea:focus,
+body.light-theme #adminEditBookForm select:focus {
+    background: #fff !important;
+    border-color: #007bff !important;
+    box-shadow: 0 0 0 2px rgba(0,123,255,0.1) !important;
+    outline: none !important;
+}
+
+body.light-theme #adminEditBookForm .form-actions {
+    background: #f8f8f8 !important;
+    border-top: 1px solid #e0e0e0 !important;
+    padding: 15px !important;
+    display: flex !important;
+    gap: 10px !important;
+    justify-content: flex-end !important;
+}
+
+body.light-theme #adminEditBookForm .btn {
+    background: #f0f0f0 !important;
+    color: #333 !important;
+    border: 1px solid #e0e0e0 !important;
+    padding: 8px 16px !important;
+    border-radius: 4px !important;
+    cursor: pointer !important;
+    transition: all 0.2s !important;
+}
+
+body.light-theme #adminEditBookForm .btn:hover {
+    background: #e0e0e0 !important;
+}
+
+body.light-theme #adminEditBookForm .btn-primary {
+    background: #007bff !important;
+    color: #fff !important;
+    border: none !important;
+}
+
+body.light-theme #adminEditBookForm .btn-primary:hover {
+    background: #0056b3 !important;
+}
+
+body.light-theme #adminEditBookForm .btn-danger {
+    background: #dc3545 !important;
+    color: #fff !important;
+    border: none !important;
+}
+
+body.light-theme #adminEditBookForm .btn-danger:hover {
+    background: #c82333 !important;
+}
+
+body.light-theme #adminEditBookForm .setting-description {
+    color: #666 !important;
+    font-size: 0.9em !important;
+    margin-top: 4px !important;
+}
+
+body.light-theme #adminEditBookForm .tag {
+    background: #f0f0f0 !important;
+    color: #333 !important;
+    border: 1px solid #e0e0e0 !important;
+    padding: 4px 8px !important;
+    border-radius: 4px !important;
+    display: inline-block !important;
+    margin: 2px !important;
+}
+
+body.light-theme #adminEditBookForm .tag.active {
+    background: #007bff !important;
+    color: #fff !important;
+    border-color: #007bff !important;
+}
